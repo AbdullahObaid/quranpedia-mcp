@@ -52,7 +52,7 @@ after editing the config and the tools will appear in the tool picker.
   "mcpServers": {
     "quran": {
       "command": "npx",
-      "args": ["-y", "quran-search-engine-mcp"]
+      "args": ["-y", "quranpedia-mcp"]
     }
   }
 }
@@ -70,7 +70,7 @@ plans.
 
 1. Open **Settings → Connectors → Add custom connector**.
 2. Enter the URL: `https://mcp.quran.us.kg/`.
-3. Save. The connector appears as **Quran Search Engine MCP** in the tool picker.
+3. Save. The connector appears as **Quranpedia MCP** in the tool picker.
 4. The server requires no API key — CORS is open and the endpoint is public.
 
 If your plan does not show the "Add custom connector" option, use Claude Desktop
@@ -88,7 +88,9 @@ hard requirements; all of them are satisfied by this server:
    and free of system-prompt directive words. See [tools.md](tools.md) for the
    exact strings.
 3. **Explicit tool annotations** — every tool declares `readOnlyHint: true`,
-   `destructiveHint: false`, `openWorldHint: false`, `idempotentHint: true`.
+   `destructiveHint: false`, `idempotentHint: true`. The 8 dataset tools use
+   `openWorldHint: false`; the 5 Quranpedia tools use `openWorldHint: true`
+   because they contact an external service.
 4. **No localhost / temporary tunnels** — the endpoint is a stable Cloudflare-fronted
    subdomain.
 
@@ -135,7 +137,7 @@ Stdio also works:
   "mcpServers": {
     "quran": {
       "command": "npx",
-      "args": ["-y", "quran-search-engine-mcp"]
+      "args": ["-y", "quranpedia-mcp"]
     }
   }
 }
@@ -167,7 +169,7 @@ For a stdio setup, omit `type` and `url` and supply `command` + `args`:
     "quran": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "quran-search-engine-mcp"]
+      "args": ["-y", "quranpedia-mcp"]
     }
   }
 }
@@ -183,10 +185,10 @@ will work.
 
 | Client | Transport | Config |
 | --- | --- | --- |
-| **Cline** (VS Code) | stdio | `command: "npx"`, `args: ["-y", "quran-search-engine-mcp"]` |
+| **Cline** (VS Code) | stdio | `command: "npx"`, `args: ["-y", "quranpedia-mcp"]` |
 | **Continue** (VS Code / JetBrains) | stdio | same as Cline |
 | **Roo Code** | stdio | same as Cline |
-| **Zed** | stdio | `npx -y quran-search-engine-mcp` |
+| **Zed** | stdio | `npx -y quranpedia-mcp` |
 | **Windsurf** | HTTP | `url: "https://mcp.quran.us.kg/"` |
 | **MCP Inspector** | HTTP / stdio | `npx @modelcontextprotocol/inspector --url https://mcp.quran.us.kg/` |
 | **Any MCP client** | HTTP | `url: "https://mcp.quran.us.kg/"` |
@@ -196,7 +198,7 @@ will work.
 ## Smithery
 
 This server is published on Smithery as
-`io.github.adelpro/quran-search-engine-mcp`. Smithery's hosted runner uses the
+`io.github.adelpro/quranpedia-mcp`. Smithery's hosted runner uses the
 stdio transport; the public URL there is automatically wired to this same
 package.
 

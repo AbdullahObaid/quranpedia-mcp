@@ -1,7 +1,13 @@
 # Tools reference
 
-Every tool exposed by `quran-search-engine-mcp`. All tools are read-only — no state
-is mutated, no data is written, and no external services are contacted.
+Every tool exposed by `quranpedia-mcp`. All tools are read-only — no state is
+mutated and no data is written. Two kinds of tools exist:
+
+- **Dataset tools** (8): pure lookups against the in-memory Quran dataset; no
+  external service is contacted.
+- **Quranpedia tools** (5): read-only lookups that contact the Quranpedia API
+  (https://api.quranpedia.net/v1) for tafsir, translations, surah background,
+  per-ayah content options, and encyclopedia search.
 
 ## Conventions
 
@@ -9,21 +15,30 @@ is mutated, no data is written, and no external services are contacted.
 - Errors return `{ isError: true, content: [{ type: 'text', text: JSON.stringify({ error }) }] }`.
 - Empty lookups (e.g. `get_verse` for a non-existent gid) return a successful payload with
   `null` or empty array — they do **not** return `isError: true`.
+- Quranpedia lookups for a resource that genuinely does not exist (e.g. `get_ayah_content_options`
+  for a non-existent ayah) also return `null` — not an error. Out-of-range inputs (surah > 114,
+  ayah > 286) fail zod validation and return `isError: true`.
 - Dataset-not-loaded errors (server still warming up) return `isError: true`.
+- Every Quranpedia tool response carries a `source` block
+  (`{ provider: 'quranpedia', url }`) so clients can attribute the answer to
+  the exact upstream endpoint.
 - `gid` (global id) is a 1-indexed sequential counter across all 114 surahs.
   For example, the first verse of Al-Fatihah is `gid: 1`, and `gid: 262` is
   Ayat al-Kursi (2:255).
 
 ## Tool annotations
 
-All eight tools declare the same annotation values:
+All thirteen tools declare the same four hints, differing only in `openWorldHint`:
 
-| Annotation | Value | Why |
-| --- | --- | --- |
-| `readOnlyHint` | `true` | No state changes. |
-| `destructiveHint` | `false` | Nothing is deleted or altered. |
-| `idempotentHint` | `true` | Repeated calls with the same inputs return the same payload. |
-| `openWorldHint` | `false` | The server only reads its in-memory dataset; no external systems are touched. |
+| Annotation | Dataset tools | Quranpedia tools | Why |
+| --- | --- | --- | --- |
+| `readOnlyHint` | `true` | `true` | No state changes. |
+| `destructiveHint` | `false` | `false` | Nothing is deleted or altered. |
+| `idempotentHint` | `true` | `true` | Repeated calls with the same inputs return the same payload. |
+| `openWorldHint` | `false` | `true` | Dataset tools only read memory; Quranpedia tools contact an external service, so clients should surface a permission prompt. |
+
+Clients may decide to pre-approve the dataset tools (closed world) while
+requiring confirmation for the Quranpedia tools (open world).
 
 ---
 
@@ -312,3 +327,250 @@ Same as `get_verse` — `gid` or `(suraId, ayaId)`.
 ```json
 { "morphology": { "gid": 1, "lemmas": ["حمد", "له", "رب", "علم"], "roots": ["حمد", "اله", "ربب", "علم"] } }
 ```
+
+---
+
+## Quranpedia tools
+
+The five tools below read from the external Quranpedia API
+(<https://api.quranpedia.net/v1>). They are annotated `openWorldHint: true`
+and every successful response includes a `source` block:
+
+```json
+{ "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/ayah/1/1/options" }, "ayah": { /* … */ } }
+```
+
+Responses are cached in memory for 30 days by default (and on disk when
+`QP_CACHE_DIR` is set), so repeat calls are instant and offline-tolerant.
+
+### Terminology
+
+- **Ayah** — one verse, addressed by `surah` (1–114) and `ayah` (1–286).
+- **Tafsir book** — a scholarly commentary; Quranpedia hosts many (Taysir
+  al-Tafsir, Ibn Kathir, al-Sa'di, al-Tabari, and more).
+- **e3rab / asbab / fatwa / topic** — Quranpedia content categories per ayah;
+  `get_ayah_content_options` lists what exists, `get_tafsir` reads a book.
+
+---
+
+## `get_ayah_content_options`
+
+Title: **Get Ayah Content Options**
+
+List the related Quranpedia content available for one ayah (tafsir, e3rab,
+asbab, translations, meanings, and more). Use this to discover what can be
+fetched next.
+
+| Field | Value |
+| --- | --- |
+| Description | "List the related Quranpedia content available for one ayah by surah and ayah number (tafsir, e3rab, asbab, translations, meanings, and more). Use this to discover what can be fetched next." (188 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{
+  "surah": "integer 1–114 (required)",
+  "ayah":  "integer 1–286 (required)"
+}
+```
+
+### Output
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/ayah/1/1/options" },
+  "ayah": {
+    "id": 1,
+    "number": 1,
+    "surah": 1,
+    "page_number": 1,
+    "text": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+    "marker": null,
+    "options": ["tafsir", "meanings", "similar", "topics", "fatwa", "e3rab", "notes", "asbab", "translations"]
+  }
+}
+```
+
+For a non-existent ayah (e.g. `1:8`), `ayah` is `null` — not an error.
+
+---
+
+## `get_tafsir`
+
+Title: **Get Tafsir**
+
+Fetch tafsir (exegesis) content for one ayah from a Quranpedia book. Defaults
+to Taysir al-Tafsir by Ibrahim al-Qattan when `book_id` is omitted.
+
+| Field | Value |
+| --- | --- |
+| Description | "Fetch tafsir (exegesis) content for one ayah from a Quranpedia book. Defaults to Taysir al-Tafsir by Ibrahim al-Qattan when book_id is omitted. When the book has no content for the ayah, returns the tafsir books available for that surah." (237 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{
+  "surah":   "integer 1–114 (required)",
+  "ayah":    "integer 1–286 (required)",
+  "book_id": "integer ≥ 1 (optional, default 1 = Taysir al-Tafsir)"
+}
+```
+
+### Output
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/ayah/1/1/book/1" },
+  "ayah": "1:1",
+  "book_id": 1,
+  "book": { "id": 1, "name": "تيسير التفسير", "short_name": "القطان", "author": { "id": 1050, "full_name": "…" }, "language": { "code": "ar", "direction": "rtl" } },
+  "content": [ { "text": "…", "part": 1, "page": "…", "ayahs": "1" } ]
+}
+```
+
+When the book has no content for the ayah (or `book_id` is unknown), the
+handler falls back to the surah's tafsir book list:
+
+```json
+{
+  "ayah": "1:1",
+  "book_id": 999,
+  "tafsir": null,
+  "reason": "Book not found",
+  "availableBooks": [ { "id": 1, "name": "تيسير التفسير", "short_name": "القطان", "author": "…" } ]
+}
+```
+
+Other tafsir books (e.g. Ibn Kathir, al-Tabari) can be read by passing their
+`id`, discovered via `get_ayah_content_options`, `get_surah_background`, or
+the fallback `availableBooks` list.
+
+---
+
+## `get_translation`
+
+Title: **Get Translation**
+
+Get human-readable translations of one ayah from Quranpedia.
+
+| Field | Value |
+| --- | --- |
+| Description | "Get human-readable translations of one ayah from Quranpedia. Pass a language code (en, fr, es, ur, and others) for one language, or omit language to get every available translation of the ayah grouped by language code." (218 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{
+  "surah":    "integer 1–114 (required)",
+  "ayah":     "integer 1–286 (required)",
+  "language": "string 2–16 chars (optional)"
+}
+```
+
+### Output
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/translations/1/1/en" },
+  "ayah": "1:1",
+  "language": "en",
+  "translations": [
+    {
+      "book": { "id": 1947, "name": "Saheeh International", "short_name": "Saheeh Int.", "authors": [ { "id": 3, "full_name": "…" } ] },
+      "translation-content": "In the name of Allah, the Entirely Merciful, the Especially Merciful."
+    }
+  ]
+}
+```
+
+Omit `language` to get every available translation grouped by language code.
+Unknown language codes return `translations: []`; a non-existent ayah returns
+`translations: null`.
+
+---
+
+## `get_surah_background`
+
+Title: **Get Surah Background**
+
+Get scholarly Quranpedia background for one surah: introduction, revelation
+type, descent order, virtues, reasons for revelation, topics, and purposes.
+This is distinct from the structural `get_sura_info` tool (id, names, verse
+count, juz/page ranges from the local dataset).
+
+| Field | Value |
+| --- | --- |
+| Description | "Get Quranpedia background for one surah by number: introduction, revelation type, descent order, virtues, reasons for revelation, topics, and purposes. This is scholarly background, distinct from the structural get_sura_info tool." (230 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{ "surah": "integer 1–114 (required)" }
+```
+
+### Output
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/surah/information/2" },
+  "surah": 2,
+  "information": {
+    "introduction": { "title": "…", "value": "…" },
+    "surah_type":   { "title": "…", "value": "Medinan" },
+    "descent":      { "title": "…", "value": "…" },
+    "topics":       { "title": "…", "value": "…" },
+    "ayahs_count":  [ { "title": "…", "value": "286" } ]
+  }
+}
+```
+
+Out-of-range surah numbers (outside 1–114) return an `isError` zod validation
+error; surah numbers the API cannot resolve return `information: null`.
+
+---
+
+## `search_quranpedia`
+
+Title: **Search Quranpedia**
+
+Search the Quranpedia encyclopedia (books, fatwas, notes, and topics) by
+keyword.
+
+| Field | Value |
+| --- | --- |
+| Description | "Search the Quranpedia encyclopedia (books, fatwas, notes, and topics) by keyword. Pass books, fatwas, notes, or topics as type to narrow the search; omit type to search all content at once. This searches encyclopedia content, distinct from the Quran text search tool." (267 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{
+  "query": "string (min 1, required)",
+  "type":  "'books' | 'fatwas' | 'notes' | 'topics' (optional)"
+}
+```
+
+### Output (all types)
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/search/رحمن" },
+  "query": "رحمن",
+  "type": null,
+  "results": {
+    "notes":  { "items": [ "…" ], "currentPage": 1, "perPage": 10, "total": 0, "lastPage": 0 },
+    "fatwas": { "items": [ "…" ], "currentPage": 1, "perPage": 10, "total": 0, "lastPage": 0 },
+    "topics": { "items": [ "…" ], "currentPage": 1, "perPage": 10, "total": 0, "lastPage": 0 },
+    "books":  { "items": [ "…" ], "currentPage": 1, "perPage": 10, "total": 0, "lastPage": 0 }
+  }
+}
+```
+
+### Output (single type)
+
+When `type` is given, `results` is a single paginated page carrying a `type`
+field (e.g. `{ items, currentPage, perPage, total, lastPage, type: "books" }`).

@@ -21,6 +21,16 @@ const FORBIDDEN_WORDS = ['MUST', 'ALWAYS', 'NEVER', 'MUST NOT', 'REQUIRED', 'SHA
 const MAX_DESCRIPTION_LENGTH = 299;
 const REQUIRED_ANNOTATIONS = ['readOnlyHint', 'destructiveHint', 'openWorldHint', 'idempotentHint'];
 
+// Quranpedia-backed tools are open-world: they reach out to an external
+// service, so openWorldHint must be true for them (and false otherwise).
+const EXTERNAL_TOOLS = new Set([
+  'get_ayah_content_options',
+  'get_tafsir',
+  'get_translation',
+  'get_surah_background',
+  'search_quranpedia',
+]);
+
 let failures = 0;
 
 function fail(message) {
@@ -88,15 +98,16 @@ async function checkTools() {
           fail(`tool "${tool.name}" is missing annotation "${key}"`);
         }
       }
+      const expectedOpenWorld = EXTERNAL_TOOLS.has(tool.name);
       if (
         ann.readOnlyHint !== true ||
         ann.destructiveHint !== false ||
-        ann.openWorldHint !== false ||
+        ann.openWorldHint !== expectedOpenWorld ||
         ann.idempotentHint !== true
       ) {
         fail(
           `tool "${tool.name}" annotation values out of spec: ${JSON.stringify(ann)} ` +
-            `(expected readOnlyHint=true, destructiveHint=false, openWorldHint=false, idempotentHint=true)`,
+            `(expected readOnlyHint=true, destructiveHint=false, openWorldHint=${expectedOpenWorld}, idempotentHint=true)`,
         );
       } else {
         pass(`tool "${tool.name}" annotations OK`);

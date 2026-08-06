@@ -3,7 +3,7 @@ startCommand:
   commandFunction: >-
     (_config) => ({
       command: "npx",
-      args: ["-y", "quran-search-engine-mcp"]
+      args: ["-y", "quranpedia-mcp"]
     })
 
 configSchema:

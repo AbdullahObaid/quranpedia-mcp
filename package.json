@@ -1,7 +1,7 @@
 {
-  "name": "quran-search-engine-mcp",
-  "version": "0.5.0",
-  "description": "Search, navigate, and explore the Quran through 8 MCP tools — verses, surahs, lemmas, roots, and morphology. Hosted at mcp.quran.us.kg.",
+  "name": "quranpedia-mcp",
+  "version": "1.0.0",
+  "description": "Explore the Quran through 13 MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quran.us.kg.",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -22,7 +22,7 @@
     "prepare": "husky"
   },
   "bin": {
-    "quran-search-engine-mcp": "dist/server.js"
+    "quranpedia-mcp": "dist/server.js"
   },
   "files": [
     "dist",
@@ -32,17 +32,19 @@
     "mcp",
     "mcp-server",
     "quran",
-    "search",
+    "tafsir",
+    "translation",
+    "quranpedia",
     "arabic",
     "claude",
     "ai"
   ],
-  "mcpName": "io.github.adelpro/quran-search-engine-mcp",
+  "mcpName": "io.github.adelpro/quranpedia-mcp",
   "author": "adelpro <contact@adelpro.us.kg>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adelpro/quran-search-engine-mcp.git"
+    "url": "https://github.com/adelpro/quranpedia-mcp.git"
   },
   "packageManager": "yarn@1.22.22",
   "dependencies": {

@@ -1,6 +1,6 @@
 # Architecture
 
-This page explains how `quran-search-engine-mcp` is wired together internally.
+This page explains how `quranpedia-mcp` is wired together internally.
 For client-facing docs (tools, integrations, deployment), see the other pages
 under `docs/`.
 
@@ -38,6 +38,20 @@ under `docs/`.
    └────────────────────┘   └──────────────────────┘
 ```
 
+The five Quranpedia-backed tools reach the external API through a shared
+typed client:
+
+```
+   src/tools/get-tafsir.ts      ──┐
+   src/tools/get-translation.ts  ─┤
+   src/tools/get-ayah-content-options.ts ─┼──>  src/quranpedia-client.ts  ──>  api.quranpedia.net
+   src/tools/get-surah-background.ts ──┤         (typed endpoints)          (HTTPS /v1)
+   src/tools/search-quranpedia.ts ─┘         ▲
+                                             │ cache
+                                   src/quranpedia-cache.ts
+                                   (memory + optional QP_CACHE_DIR disk layer)
+```
+
 ## Transport selection
 
 `src/server.ts` picks the transport at startup, in this order of precedence:
@@ -49,12 +63,50 @@ under `docs/`.
 Then it dispatches to either `runStdio()` or `runHttp(opts)`. Both call
 `createServer()` from `create-server.ts`, which:
 
-1. Constructs a fresh `McpServer({ name: 'quran-search-engine-mcp', version: VERSION })`.
-2. Calls `registerTools(server)`, which registers all 8 tools in alphabetical
+1. Constructs a fresh `McpServer({ name: 'quranpedia-mcp', version: VERSION })`.
+2. Calls `registerTools(server)`, which registers all 13 tools in alphabetical
    order for a stable `tools/list` output.
 
 Because both transports share the same `createServer()` + `registerTools()` path,
 the advertised tool surface is identical regardless of transport.
+
+## Quranpedia client and cache
+
+`src/quranpedia-client.ts` is a thin, typed wrapper around the Quranpedia API
+(`https://api.quranpedia.net/v1`). It centralizes:
+
+- **Config** — base URL and defaults, all env-tunable (see table below).
+- **Error normalization** — Quranpedia's `{ error: "…" }` bodies (400/404) are
+  thrown as `QuranpediaError` instances carrying the HTTP `status` and `url`.
+  Handlers branch on status: a 404 means "genuinely missing" (→ `null` payload),
+  anything else becomes an `isError` response.
+- **Typed endpoint helpers** — `fetchAyahOptions`, `fetchAyahBook`,
+  `fetchSurahTafsirs`, `fetchTranslation`, `fetchSurahInformation`,
+  `searchQuranpedia`, each returning `{ url, data }` for attribution.
+
+Every request flows through `src/quranpedia-cache.ts` (`getOrSet`):
+
+| Layer | When used | Notes |
+| --- | --- | --- |
+| In-memory `Map` | always | Shared across HTTP sessions; capped at `QP_CACHE_MAX_ENTRIES` (oldest evicted first). |
+| On-disk (`QP_CACHE_DIR`) | when set | SHA-1-keyed JSON files that survive restarts, so a long-running server keeps serving cached ayahs even if the upstream is down. Point it at a mounted volume (e.g. rclone/FUSE Garage S3) for durable caching. |
+
+Concurrent callers with the same key share one in-flight fetch (a `pending`
+map), so popular ayahs never hammer the upstream in parallel.
+
+### Quranpedia environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `QP_BASE_URL` | `https://api.quranpedia.net/v1` | Upstream base URL. |
+| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1` | Book used by `get_tafsir` when `book_id` is omitted (تيسير التفسير). |
+| `QP_FETCH_TIMEOUT_MS` | `30000` | Per-request upstream timeout. |
+| `QP_CACHE_TTL_MS` | `2592000000` (30 d) | Cache entry lifetime; Quranic text is static. |
+| `QP_CACHE_DIR` | _(unset)_ | Optional persistent cache directory. |
+| `QP_CACHE_MAX_ENTRIES` | `5000` | In-memory cache cap. |
+
+`/health` reports `quranpediaCache: { memoryEntries, diskEntries, hits, misses }`
+alongside the existing `status` / `dataLoaded` / `version` / `sessions` fields.
 
 ## Dataset loading
 
@@ -93,7 +145,7 @@ session id. Sessions are tracked in a `Map<sessionId, Session>`.
 | `POST` | `/` | Initialize new sessions and send JSON-RPC requests |
 | `GET` | `/` | Server-sent events for streaming responses |
 | `DELETE` | `/` | Close a session |
-| `GET` | `/health` | `{"status":"ok","dataLoaded":bool,"version":"…","sessions":N}` |
+| `GET` | `/health` | `{"status":"ok","dataLoaded":bool,"version":"…","sessions":N,"quranpediaCache":{…}}` |
 | `OPTIONS` | `*` | CORS preflight |
 
 ### Hardening

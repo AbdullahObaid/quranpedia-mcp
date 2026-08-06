@@ -4,7 +4,7 @@ import { VERSION } from './version.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({
-    name: 'quran-search-engine-mcp',
+    name: 'quranpedia-mcp',
     version: VERSION,
   });
 

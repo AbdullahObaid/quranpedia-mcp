@@ -9,6 +9,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from './create-server.js';
 import { ensureDataLoaded, isDataLoaded } from './data.js';
+import { quranpediaCacheStats } from './quranpedia-client.js';
 import { VERSION } from './version.js';
 
 export interface HttpOptions {
@@ -134,6 +135,7 @@ export async function runHttp(
             dataLoaded: isDataLoaded(),
             version: VERSION,
             sessions: sessions.size,
+            quranpediaCache: quranpediaCacheStats(),
           }),
         );
         return;

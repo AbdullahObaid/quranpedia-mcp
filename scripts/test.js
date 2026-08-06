@@ -4,7 +4,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 
 const serverPath = path.join(process.cwd(), 'dist', 'server.js');
-const client = new Client({ name: 'quran-search-engine-mcp-test', version: '0.1.0' });
+const client = new Client({ name: 'quranpedia-mcp-test', version: '0.1.0' });
 const transport = new StdioClientTransport({
   command: process.execPath,
   args: [serverPath],
@@ -20,7 +20,20 @@ const REQUIRED_TOOLS = [
   'find_verses_by_root',
   'find_verses_by_lemma',
   'get_verse_morphology',
+  'get_ayah_content_options',
+  'get_tafsir',
+  'get_translation',
+  'get_surah_background',
+  'search_quranpedia',
 ];
+
+const EXTERNAL_TOOLS = new Set([
+  'get_ayah_content_options',
+  'get_tafsir',
+  'get_translation',
+  'get_surah_background',
+  'search_quranpedia',
+]);
 
 function assert(condition, message) {
   if (!condition) throw new Error(`assertion failed: ${message}`);
@@ -136,6 +149,89 @@ try {
   // Negative: get_verses_by_range with bad syntax → tool error
   const badRangeResult = await callTool('get_verses_by_range', { range: 'abc:def' });
   assert(badRangeResult.isError === true, "get_verses_by_range('abc:def') should return isError");
+
+  // get_ayah_content_options — 1:1 exposes a rich option set
+  const optionsResult = await callTool('get_ayah_content_options', { surah: 1, ayah: 1 });
+  const optionsPayload = parsePayload(optionsResult);
+  assert(
+    optionsPayload.ayah && Array.isArray(optionsPayload.ayah.options),
+    'get_ayah_content_options(1,1) should return an options array',
+  );
+  assert(
+    optionsPayload.ayah.options.includes('tafsir'),
+    "get_ayah_content_options(1,1) should include 'tafsir' in options",
+  );
+  assert(optionsPayload.source?.provider === 'quranpedia', 'response should carry a quranpedia source block');
+
+  // get_ayah_content_options — unknown ayah (1:8 does not exist) → null, not an error
+  const missingAyah = await callTool('get_ayah_content_options', { surah: 1, ayah: 8 });
+  const missingAyahPayload = parsePayload(missingAyah);
+  assert(missingAyahPayload.ayah === null, 'get_ayah_content_options(1,8) should return ayah: null');
+
+  // get_tafsir — default book (تيسير التفسير) for Ayat al-Kursi
+  const tafsirResult = await callTool('get_tafsir', { surah: 2, ayah: 255 });
+  const tafsirPayload = parsePayload(tafsirResult);
+  assert(tafsirPayload.book && tafsirPayload.book.id === 1, 'get_tafsir(2,255) should default to book 1');
+  assert(
+    Array.isArray(tafsirPayload.content) && tafsirPayload.content.length > 0,
+    'get_tafsir(2,255) should return tafsir content',
+  );
+
+  // get_tafsir — unknown book → falls back to available books list
+  const tafsirFallback = await callTool('get_tafsir', { surah: 1, ayah: 1, book_id: 99999999 });
+  const tafsirFallbackPayload = parsePayload(tafsirFallback);
+  assert(
+    tafsirFallbackPayload.tafsir === null && Array.isArray(tafsirFallbackPayload.availableBooks),
+    'get_tafsir with a bad book_id should fall back to availableBooks',
+  );
+
+  // get_translation — English for 2:255
+  const translationResult = await callTool('get_translation', { surah: 2, ayah: 255, language: 'en' });
+  const translationPayload = parsePayload(translationResult);
+  assert(
+    Array.isArray(translationPayload.translations) && translationPayload.translations.length > 0,
+    'get_translation(2,255,en) should return translations',
+  );
+
+  // get_translation — unknown ayah (1:8 does not exist) → null
+  const missingTranslation = await callTool('get_translation', { surah: 1, ayah: 8, language: 'en' });
+  const missingTranslationPayload = parsePayload(missingTranslation);
+  assert(
+    missingTranslationPayload.translations === null,
+    'get_translation(1,8,en) should return translations: null',
+  );
+
+  // get_surah_background — Al-Baqarah
+  const backgroundResult = await callTool('get_surah_background', { surah: 2 });
+  const backgroundPayload = parsePayload(backgroundResult);
+  assert(
+    backgroundPayload.information && backgroundPayload.information.surah_type,
+    'get_surah_background(2) should return revelation type info',
+  );
+
+  // get_surah_background — out-of-range surah → tool error (schema rejects > 114)
+  const missingBackground = await callTool('get_surah_background', { surah: 999 });
+  assert(missingBackground.isError === true, 'get_surah_background(999) should return isError');
+
+  // search_quranpedia — all types
+  const qpSearchResult = await callTool('search_quranpedia', { query: 'رحمن' });
+  const qpSearchPayload = parsePayload(qpSearchResult);
+  assert(
+    qpSearchPayload.results && typeof qpSearchPayload.results === 'object',
+    'search_quranpedia("رحمن") should return grouped results',
+  );
+
+  // search_quranpedia — single type
+  const qpSearchBooks = await callTool('search_quranpedia', { query: 'تفسير', type: 'books' });
+  const qpSearchBooksPayload = parsePayload(qpSearchBooks);
+  assert(
+    Array.isArray(qpSearchBooksPayload.results.items),
+    "search_quranpedia('تفسير','books') should return an items array",
+  );
+
+  // search_quranpedia — invalid type → tool error
+  const badTypeResult = await callTool('search_quranpedia', { query: 'رحمن', type: 'bogus' });
+  assert(badTypeResult.isError === true, "search_quranpedia('bogus' type) should return isError");
 
   console.log('stdio transport test passed');
   process.exit(0);

@@ -1,7 +1,7 @@
 services:
   quran-mcp:
     build: .
-    container_name: quran-search-engine-mcp
+    container_name: quranpedia-mcp
     restart: unless-stopped
     env_file:
       - .env

@@ -1,6 +1,6 @@
 # Development
 
-Everything you need to build, test, lint, and deploy `quran-search-engine-mcp`.
+Everything you need to build, test, lint, and deploy `quranpedia-mcp`.
 
 ## Prerequisites
 
@@ -45,10 +45,14 @@ then `test:stdio` and `test:http`. Both scripts:
 
 - spawn the compiled `dist/server.js`
 - open a real MCP client (stdio or Streamable HTTP)
-- call `tools/list` and assert that all 8 required tools are registered
+- call `tools/list` and assert that all 13 required tools are registered
 - call each tool with a happy-path argument
-- assert that annotations are present
+- assert that annotations are present (including `openWorldHint: true` for the
+  5 Quranpedia tools)
 - close the session and verify the server cleans up
+
+The stdio and HTTP suites call the Quranpedia tools against the live
+`api.quranpedia.net`, so they require network access.
 
 You can run the stdio or HTTP suite on its own:
 
@@ -108,12 +112,20 @@ new tool:
    }
    ```
 
+   For a **Quranpedia-backed** tool (contacts api.quranpedia.net), use
+   `EXTERNAL_READ_ONLY_ANNOTATIONS` instead of `READ_ONLY_ANNOTATIONS`, add a
+   typed endpoint helper in `src/quranpedia-client.ts`, and build the response
+   with `quranpediaOk(url, payload)` / `quranpediaErrorResponse(error)` /
+   `isQuranpediaNotFound(error)` from `_shared.ts`. See
+   `src/tools/get-tafsir.ts` as a worked example.
+
 2. **Wire it in `src/tools/index.ts`** in alphabetical order (so `tools/list`
    output is stable).
 
 3. **Add a positive test** in `scripts/test.js` and `scripts/test-http.js`,
    plus a negative test if your tool has a `Zod.refine()` or non-trivial
-   validation.
+   validation. If the tool is Quranpedia-backed, add it to the `EXTERNAL_TOOLS`
+   set in both scripts (drives the `openWorldHint` annotation assertion).
 
 4. **Document the tool** in `docs/tools.md` (description, schema, output,
    example, annotations).
@@ -144,7 +156,7 @@ Verify the new version is live:
 
 ```bash
 curl -sS https://mcp.quran.us.kg/health
-# → {"status":"ok","dataLoaded":true,"version":"0.5.0","sessions":0}
+# → {"status":"ok","dataLoaded":true,"version":"1.0.0","sessions":0,"quranpediaCache":{"memoryEntries":0,"diskEntries":0,"hits":0,"misses":0}}
 ```
 
 ## Release
@@ -158,7 +170,7 @@ yarn publish --access public
 ## Repository layout
 
 ```
-quran-search-engine-mcp/
+quranpedia-mcp/
 ├── README.md                    # short landing page
 ├── CHANGELOG.md
 ├── docs/                        # detailed documentation (this folder)
@@ -171,12 +183,14 @@ quran-search-engine-mcp/
 │   ├── server.ts                # transport resolver
 │   ├── create-server.ts         # McpServer factory
 │   ├── data.ts                  # QuranDataset loader
+│   ├── quranpedia-client.ts     # typed Quranpedia API client + config
+│   ├── quranpedia-cache.ts      # TTL memory + optional disk cache
 │   ├── stdio.ts                 # stdio transport
 │   ├── http.ts                  # Streamable HTTP transport
 │   ├── version.ts
 │   └── tools/
-│       ├── index.ts             # registerTools() — wires all 8 tools
-│       ├── _shared.ts           # jsonOk / jsonError / getDatasetOrError / READ_ONLY_ANNOTATIONS
+│       ├── index.ts             # registerTools() — wires all 13 tools
+│       ├── _shared.ts           # jsonOk / jsonError / getDatasetOrError / annotations
 │       ├── search.ts
 │       ├── list-surahs.ts
 │       ├── get-sura-info.ts
@@ -184,7 +198,12 @@ quran-search-engine-mcp/
 │       ├── get-verses-by-range.ts
 │       ├── find-verses-by-root.ts
 │       ├── find-verses-by-lemma.ts
-│       └── get-verse-morphology.ts
+│       ├── get-verse-morphology.ts
+│       ├── get-ayah-content-options.ts   # Quranpedia
+│       ├── get-tafsir.ts                 # Quranpedia
+│       ├── get-translation.ts            # Quranpedia
+│       ├── get-surah-background.ts       # Quranpedia
+│       └── search-quranpedia.ts          # Quranpedia
 ├── scripts/
 │   ├── test.js                  # stdio end-to-end
 │   ├── test-http.js             # HTTP end-to-end
@@ -192,6 +211,7 @@ quran-search-engine-mcp/
 │   └── check-submission.js      # ChatGPT submission linter
 ├── Dockerfile
 ├── docker-compose.yml
-├── server.json                  # MCP registry manifest
+├── server.json                  # MCP registry manifest (npm stdio + remote HTTP)
+├── mcp.json                     # client config pointing at mcp.quran.us.kg
 └── smithery.yaml                # Smithery stdio manifest
 ```

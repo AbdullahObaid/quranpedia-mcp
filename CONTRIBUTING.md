@@ -1,9 +1,9 @@
 # Contributing
 
-Thanks for your interest in **quran-search-engine-mcp** — an MCP server that
-exposes 8 read-only tools for searching, navigating, and exploring the Quran.
-Whether you're fixing a typo, adding a tool, or improving docs, you're welcome
-here.
+Thanks for your interest in **quranpedia-mcp** — an MCP server that
+exposes 13 read-only tools for searching, navigating, and exploring the Quran
+(8 dataset tools + 5 Quranpedia-backed tools). Whether you're fixing a typo,
+adding a tool, or improving docs, you're welcome here.
 
 > **New here?** Skim [docs/index.md](docs/index.md) for the project overview,
 > then come back. The dev workflow is fully covered in
@@ -13,8 +13,8 @@ here.
 ## Quick start (TL;DR)
 
 ```bash
-git clone https://github.com/<you>/quran-search-engine-mcp.git
-cd quran-search-engine-mcp
+git clone https://github.com/<you>/quranpedia-mcp.git
+cd quranpedia-mcp
 yarn install
 yarn dev          # stdio; or: yarn dev:http for Streamable HTTP on PORT (3000)
 ```

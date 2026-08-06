@@ -1,16 +1,16 @@
-# Quran Search Engine MCP
+# Quranpedia MCP
 
-[![npm version](https://img.shields.io/npm/v/quran-search-engine-mcp.svg)](https://www.npmjs.com/package/quran-search-engine-mcp)
+[![npm version](https://img.shields.io/npm/v/quranpedia-mcp.svg)](https://www.npmjs.com/package/quranpedia-mcp)
 [![quran-search-engine](https://img.shields.io/npm/v/quran-search-engine.svg?label=engine&color=blue)](https://www.npmjs.com/package/quran-search-engine)
-[![license](https://img.shields.io/npm/l/quran-search-engine-mcp.svg)](LICENSE)
+[![license](https://img.shields.io/npm/l/quranpedia-mcp.svg)](LICENSE)
 
-An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that wraps the
-[quran-search-engine](https://www.npmjs.com/package/quran-search-engine) package, giving AI
-clients fast, accurate, hallucination-free access to the Quran — including search by
-Arabic word / lemma / root, verse navigation by id or range, surah metadata, and per-verse
-morphology.
+An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI
+clients fast, accurate, hallucination-free access to the Quran — search and navigation
+through the [quran-search-engine](https://www.npmjs.com/package/quran-search-engine)
+package, plus tafsir, translations, and surah background through the
+[Quranpedia](https://api.quranpedia.net/v1) API.
 
-> Search, navigate, and explore the Quran through 8 MCP tools — verses, surahs, lemmas, roots, and morphology. Hosted at mcp.quran.us.kg.
+> Explore the Quran through 13 MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quran.us.kg.
 
 The server is publicly hosted at **<https://mcp.quran.us.kg>** (Cloudflare-fronted, stable
 subdomain of `quran.us.kg`) and exposes its full tool surface over both
@@ -37,7 +37,7 @@ For ad-hoc testing with `curl` + a one-off Node script, see
 ## Quick start (stdio)
 
 ```bash
-npx -y quran-search-engine-mcp
+npx -y quranpedia-mcp
 ```
 
 This runs the server over stdio. Use it with Claude Desktop, Cursor, or any other
@@ -45,7 +45,9 @@ MCP client that supports the stdio transport.
 
 ## What can the server do?
 
-Eight tools, all pure read-only lookups against an in-memory Quran dataset:
+Thirteen tools, all read-only. Eight are pure lookups against the in-memory
+Quran dataset (annotated `openWorldHint: false`); five contact the Quranpedia
+API (annotated `openWorldHint: true`):
 
 | Tool | Purpose |
 | --- | --- |
@@ -57,6 +59,15 @@ Eight tools, all pure read-only lookups against an in-memory Quran dataset:
 | `find_verses_by_root` | Find verses by normalized Arabic root via the inverted index. |
 | `find_verses_by_lemma` | Find verses by normalized lemma via the inverted index. |
 | `get_verse_morphology` | Lemmas and roots for a single verse. |
+| `get_ayah_content_options` | *(Quranpedia)* List the related content available for one ayah (tafsir, e3rab, asbab, translations, …). |
+| `get_tafsir` | *(Quranpedia)* Exegesis content for one ayah from a tafsir book (default: Taysir al-Tafsir). |
+| `get_translation` | *(Quranpedia)* Translations of one ayah in one language, or grouped by all available languages. |
+| `get_surah_background` | *(Quranpedia)* Scholarly surah background: introduction, revelation type, virtues, topics, purposes. |
+| `search_quranpedia` | *(Quranpedia)* Search the encyclopedia (books, fatwas, notes, topics) by keyword. |
+
+Quranpedia tools work offline-friendly: responses are cached for 30 days in
+memory (and on disk when `QP_CACHE_DIR` is set), and each response carries a
+`source` block so the answer can be attributed to its upstream URL.
 
 Full reference with schemas and examples: [tools.md](tools.md).
 

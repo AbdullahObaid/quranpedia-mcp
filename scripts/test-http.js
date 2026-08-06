@@ -45,7 +45,20 @@ const REQUIRED_TOOLS = [
   'find_verses_by_root',
   'find_verses_by_lemma',
   'get_verse_morphology',
+  'get_ayah_content_options',
+  'get_tafsir',
+  'get_translation',
+  'get_surah_background',
+  'search_quranpedia',
 ];
+
+const EXTERNAL_TOOLS = new Set([
+  'get_ayah_content_options',
+  'get_tafsir',
+  'get_translation',
+  'get_surah_background',
+  'search_quranpedia',
+]);
 
 function assert(condition, message) {
   if (!condition) throw new Error(`assertion failed: ${message}`);
@@ -72,7 +85,7 @@ async function main() {
   const health = await fetch(`${base}/health`).then((r) => r.json());
   if (!health.dataLoaded) throw new Error('Expected dataLoaded=true from /health');
 
-  const client = new Client({ name: 'quran-search-engine-mcp-http-test', version: '0.1.0' });
+  const client = new Client({ name: 'quranpedia-mcp-http-test', version: '0.1.0' });
   const transport = new StreamableHTTPClientTransport(new URL(`${base}/`));
   await client.connect(transport);
 
@@ -87,12 +100,18 @@ async function main() {
     assert(toolNames.includes(required), `expected tool "${required}" to be registered`);
   }
 
-  // Every tool must declare all four annotation hints
+  // Every tool must declare all four annotation hints. Quranpedia-backed
+  // tools are open-world (they contact an external service); the dataset
+  // tools are closed-world.
   for (const tool of toolsResult.tools) {
     const ann = tool.annotations ?? {};
+    const expectedOpenWorld = EXTERNAL_TOOLS.has(tool.name);
     assert(
-      ann.readOnlyHint === true && ann.destructiveHint === false && ann.openWorldHint === false && ann.idempotentHint === true,
-      `tool "${tool.name}" is missing required annotations (got ${JSON.stringify(ann)})`,
+      ann.readOnlyHint === true &&
+        ann.destructiveHint === false &&
+        ann.openWorldHint === expectedOpenWorld &&
+        ann.idempotentHint === true,
+      `tool "${tool.name}" has unexpected annotations (got ${JSON.stringify(ann)}, openWorldHint expected ${expectedOpenWorld})`,
     );
   }
 
@@ -146,6 +165,58 @@ async function main() {
     morphPayload.morphology && Array.isArray(morphPayload.morphology.lemmas),
     'get_verse_morphology should return morphology with lemmas array',
   );
+
+  // get_ayah_content_options
+  const optionsResult = await callTool(client, 'get_ayah_content_options', { surah: 1, ayah: 1 });
+  const optionsPayload = parsePayload(optionsResult);
+  assert(
+    optionsPayload.ayah && optionsPayload.ayah.options.includes('tafsir'),
+    'get_ayah_content_options(1,1) should include tafsir option',
+  );
+  assert(
+    optionsPayload.source?.provider === 'quranpedia',
+    'get_ayah_content_options should carry a quranpedia source block',
+  );
+
+  // get_tafsir — default book
+  const tafsirResult = await callTool(client, 'get_tafsir', { surah: 2, ayah: 255 });
+  const tafsirPayload = parsePayload(tafsirResult);
+  assert(tafsirPayload.book && tafsirPayload.book.id === 1, 'get_tafsir(2,255) should default to book 1');
+  assert(Array.isArray(tafsirPayload.content), 'get_tafsir(2,255) should return content array');
+
+  // get_translation
+  const translationResult = await callTool(client, 'get_translation', {
+    surah: 2,
+    ayah: 255,
+    language: 'en',
+  });
+  const translationPayload = parsePayload(translationResult);
+  assert(
+    Array.isArray(translationPayload.translations) && translationPayload.translations.length > 0,
+    'get_translation(2,255,en) should return translations',
+  );
+
+  // get_surah_background
+  const backgroundResult = await callTool(client, 'get_surah_background', { surah: 2 });
+  const backgroundPayload = parsePayload(backgroundResult);
+  assert(
+    backgroundPayload.information && backgroundPayload.information.surah_type,
+    'get_surah_background(2) should return surah type info',
+  );
+
+  // search_quranpedia — all types and a single type
+  const qpSearchResult = await callTool(client, 'search_quranpedia', { query: 'رحمن' });
+  const qpSearchPayload = parsePayload(qpSearchResult);
+  assert(qpSearchPayload.results && typeof qpSearchPayload.results === 'object', 'search_quranpedia should return results');
+
+  // Negative: unknown ayah (1:8 does not exist) → null payload, not an error
+  const missingAyah = await callTool(client, 'get_ayah_content_options', { surah: 1, ayah: 8 });
+  const missingAyahPayload = parsePayload(missingAyah);
+  assert(missingAyahPayload.ayah === null, 'get_ayah_content_options(1,8) should return ayah: null');
+
+  // Negative: invalid search type → tool error
+  const badTypeResult = await callTool(client, 'search_quranpedia', { query: 'رحمن', type: 'bogus' });
+  assert(badTypeResult.isError === true, "search_quranpedia('bogus' type) should return isError");
 
   // Negative: no session id on a non-initialize POST should be rejected.
   const badResponse = await fetch(`${base}/`, {
