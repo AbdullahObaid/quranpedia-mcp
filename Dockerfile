@@ -13,8 +13,7 @@ ENV NODE_ENV=production TRANSPORT=http HOST=0.0.0.0 PORT=4000
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --production \
- && yarn cache clean \
- && find node_modules/quran-search-engine -name '*.map' -delete
+ && yarn cache clean
 COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 4000
