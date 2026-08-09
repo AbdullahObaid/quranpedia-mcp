@@ -260,3 +260,87 @@ export function searchQuranpedia(
   const suffix = type ? `/${type}` : '';
   return quranpediaRequest(`search:${type ?? 'all'}:${query}`, `/search/${encoded}${suffix}`);
 }
+
+export function fetchMushafs(): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest('mushafs', '/mushafs');
+}
+export function fetchMushaf(id: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`mushaf:${id}`, `/mushafs/${id}`);
+}
+export function fetchMushafAyah(
+  mushafId: number,
+  surahId: number,
+  ayahNumber: number,
+): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(
+    `mushaf-ayah:${mushafId}:${surahId}:${ayahNumber}`,
+    `/mushafs/${mushafId}/${surahId}/${ayahNumber}`,
+  );
+}
+export function fetchMushafSurah(
+  mushafId: number,
+  surahId: number,
+): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(
+    `mushaf-surah:${mushafId}:${surahId}`,
+    `/mushafs/${mushafId}/${surahId}`,
+  );
+}
+export function fetchSurahBooks(surahId: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`surah-books:${surahId}`, `/surah/books/${surahId}`);
+}
+export function fetchSurahFatwas(surahId: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`surah-fatwas:${surahId}`, `/surah/fatwas/${surahId}`);
+}
+export function fetchTranslationBooks(language?: string): Promise<QuranpediaResult<unknown>> {
+  const suffix = language ? `/${language}` : '';
+  return quranpediaRequest(`translation-books:${language ?? 'all'}`, `/translation-books${suffix}`);
+}
+export function fetchAyahTranslationByBook(
+  bookId: number,
+  surahId: number,
+  ayahNumber?: number,
+): Promise<QuranpediaResult<unknown>> {
+  const suffix = ayahNumber !== undefined ? `/${ayahNumber}` : '';
+  return quranpediaRequest(
+    `translation-book:${bookId}:${surahId}:${ayahNumber ?? 'surah'}`,
+    `/translation/${bookId}/${surahId}${suffix}`,
+  );
+}
+export function fetchTranslationAvailableLanguages(
+  surahId: number,
+  ayahNumber: number,
+): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(
+    `translation-languages:${surahId}:${ayahNumber}`,
+    `/translations/available-languages/${surahId}/${ayahNumber}`,
+  );
+}
+export function fetchBook(bookId: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`book:${bookId}`, `/book/${bookId}`);
+}
+export function fetchRelatedBooks(bookId: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`related-books:${bookId}`, `/related-books/${bookId}`);
+}
+export function fetchFatwa(fatwaId: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`fatwa:${fatwaId}`, `/fatwa/${fatwaId}`);
+}
+export function fetchNote(noteId: number): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`note:${noteId}`, `/note/${noteId}`);
+}
+export function fetchTopics(): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest('topics', '/topics');
+}
+export function fetchReciters(): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest('reciters', '/reciters');
+}
+export function fetchCategories(type?: QuranpediaSearchType): Promise<QuranpediaResult<unknown>> {
+  const suffix = type ? `/${type}` : '';
+  return quranpediaRequest(`categories:${type ?? 'all'}`, `/categories${suffix}`);
+}
+export function fetchCategoryItems(
+  categoryId: number,
+  type: QuranpediaSearchType,
+): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(`category:${categoryId}:${type}`, `/category/${categoryId}/${type}`);
+}
