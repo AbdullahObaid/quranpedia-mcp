@@ -2,7 +2,7 @@
   "mcpServers": {
     "quranpedia-mcp": {
       "type": "streamable-http",
-      "url": "https://quranpedia-mcp.quran.us.kg/"
+      "url": "https://mcp.quranpedia.net/"
     }
   }
 }

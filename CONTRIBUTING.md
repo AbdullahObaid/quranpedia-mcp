@@ -38,12 +38,12 @@ rest.
 > **TODO:** a dedicated `SECURITY.md` will replace this section.
 
 If you discover a security vulnerability, **do not open a public issue**.
-Email [`contact@adelpro.us.kg`](mailto:contact@adelpro.us.kg) privately with
+Email [`contact@quranpedia.net`](mailto:contact@adelpro.us.kg) privately with
 details and a reproducer. You should receive an acknowledgement within a few
 days.
 
 For non-security bugs against the hosted endpoint at
-[`https://mcp.quran.us.kg/`](https://mcp.quran.us.kg/), please first reproduce
+[`https://mcp.quranpedia.net/`](https://mcp.quran-pedia.net/), please first reproduce
 the issue locally with `yarn dev:http` before filing — it may be a transient
 Cloudflare incident rather than a server bug.
 

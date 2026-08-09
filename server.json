@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.adelpro/quranpedia-mcp",
-  "description": "Explore the Quran through 13 MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quran.us.kg.",
+  "name": "io.github.quranpedia/quranpedia-mcp",
+  "description": "Explore the Quran through MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quranpedia.net.",
   "repository": {
-    "url": "https://github.com/adelpro/quranpedia-mcp",
+    "url": "https://github.com/quranpedia/quranpedia-mcp",
     "source": "github"
   },
   "version": "1.0.0",
@@ -21,7 +21,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://mcp.quran.us.kg/"
+      "url": "https://mcp.quranpedia.net/"
     }
   ]
 }

@@ -67,7 +67,11 @@ async function checkTools() {
   console.log('\n[2/4] Tool descriptions, forbidden words, annotations');
   const serverPath = path.join(process.cwd(), 'dist', 'server.js');
   const client = new Client({ name: 'check-submission', version: '1.0.0' });
-  const transport = new StdioClientTransport({ command: process.execPath, args: [serverPath], env: process.env });
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [serverPath],
+    env: process.env,
+  });
 
   try {
     await client.connect(transport);
@@ -80,7 +84,9 @@ async function checkTools() {
         continue;
       }
       if (desc.length > MAX_DESCRIPTION_LENGTH) {
-        fail(`tool "${tool.name}" description is ${desc.length} chars (>${MAX_DESCRIPTION_LENGTH})`);
+        fail(
+          `tool "${tool.name}" description is ${desc.length} chars (>${MAX_DESCRIPTION_LENGTH})`,
+        );
       } else {
         pass(`tool "${tool.name}" description length: ${desc.length}`);
       }
@@ -127,7 +133,9 @@ async function main() {
   await checkPublicEndpoint();
   await checkTools();
 
-  console.log(`\n=== ${failures === 0 ? 'PASS' : `FAIL (${failures} issue${failures === 1 ? '' : 's'})`} ===`);
+  console.log(
+    `\n=== ${failures === 0 ? 'PASS' : `FAIL (${failures} issue${failures === 1 ? '' : 's'})`} ===`,
+  );
   process.exit(failures === 0 ? 0 : 1);
 }
 

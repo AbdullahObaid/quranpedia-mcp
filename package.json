@@ -1,7 +1,7 @@
 {
   "name": "quranpedia-mcp",
   "version": "1.0.0",
-  "description": "Explore the Quran through 13 MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quran.us.kg.",
+  "description": "Explore the Quran through MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quranpedia.net.",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -14,7 +14,6 @@
     "lint": "eslint src/**/*.{ts,tsx}",
     "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
-    "pretest": "node scripts/check-versions.js",
     "test": "yarn build && yarn test:stdio && yarn test:http",
     "test:stdio": "node scripts/test.js",
     "test:http": "node scripts/test-http.js",
@@ -39,12 +38,12 @@
     "claude",
     "ai"
   ],
-  "mcpName": "io.github.adelpro/quranpedia-mcp",
-  "author": "adelpro <contact@adelpro.us.kg>",
+  "mcpName": "io.github.quranpedia/quranpedia-mcp",
+  "author": "quranpedia <contact@quranpedia.net>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adelpro/quranpedia-mcp.git"
+    "url": "https://github.com/quranpedia/quranpedia-mcp.git"
   },
   "packageManager": "yarn@1.22.22",
   "dependencies": {
