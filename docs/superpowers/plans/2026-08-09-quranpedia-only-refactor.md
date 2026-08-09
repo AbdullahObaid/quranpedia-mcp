@@ -448,38 +448,39 @@ git commit -m "chore(package): bump to 2.0.0, drop quran-search-engine dependenc
 - `version`: `"1.0.0"` → `"2.0.0"` (both top-level and the `packages` entry).
 - `description`: same new text as Task 8.
 
-- [ ] **Step 2: `CHANGELOG.md`**
+- [ ] **Step 2: `CHANGELOG.md` — slim to Quranpedia-only history (human ruling, 2026-08-09)**
 
-Add at the top (below the intro, above `## [1.0.0]`):
+The changelog must reflect **only the Quranpedia traces**. Keep only the
+Quranpedia-era sections; delete the pre-Quranpedia (quran-search-engine /
+dataset-era) sections entirely.
+
+- Keep the intro (Keep a Changelog + SemVer note).
+- **Delete** the `## [0.5.0]`, `## [Unreleased]`, and `## [0.1.0]` sections.
+- **Keep** `## [1.0.0] - 2026-08-06` unchanged (the five Quranpedia-backed tools era).
+- **Add** a slim `## [2.0.0] - 2026-08-09` entry at the top (below the intro,
+  above `## [1.0.0]`), brief and Quranpedia-only:
 
 ```markdown
 ## [2.0.0] - 2026-08-09
 
-### Removed
-
-- `quran-search-engine` dependency and its 8 dataset-backed tools: `search`,
-  `list_surahs`, `get_sura_info`, `get_verse`, `get_verses_by_range`,
-  `find_verses_by_root`, `find_verses_by_lemma`, `get_verse_morphology`.
-- Offline/in-memory dataset loading (`src/data.ts`). All tools now require
-  network access to `api.quranpedia.net`.
-
 ### Changed
 
-- Every tool is now backed by the Quranpedia API and named after its route.
-- Renamed: `get_ayah_content_options` → `get_ayah_options`,
+- Every tool is now backed by the Quranpedia API, named after its route, and
+  annotated `openWorldHint: true` (23 tools total).
+- Renamed to mirror routes: `get_ayah_content_options` → `get_ayah_options`,
   `get_tafsir` → `get_ayah_book_content`,
   `get_surah_background` → `get_surah_information`,
   `search_quranpedia` → `search`.
-- All 23 tools annotated `openWorldHint: true`.
+
+### Removed
+
+- `quran-search-engine` dependency, the offline dataset loader, and the 8
+  dataset-backed tools. All tools now require network access to
+  `api.quranpedia.net`.
 
 ### Added
 
-- 18 new tools: `get_mushafs`, `get_mushaf`, `get_mushaf_ayah`,
-  `get_mushaf_surah`, `get_surah_books`, `get_surah_fatwas`,
-  `get_surah_tafsirs`, `get_translation_books`, `get_translation_by_book`,
-  `get_translation_available_languages`, `get_book`, `get_related_books`,
-  `get_fatwa`, `get_note`, `get_topics`, `get_reciters`, `get_categories`,
-  `get_category_items`.
+- 18 new route tools: mushaf, surah, translation, library, and index lookups.
 ```
 
 - [ ] **Step 3: Commit**
