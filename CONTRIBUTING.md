@@ -1,8 +1,9 @@
 # Contributing
 
 Thanks for your interest in **quranpedia-mcp** — an MCP server that
-exposes 13 read-only tools for searching, navigating, and exploring the Quran
-(8 dataset tools + 5 Quranpedia-backed tools). Whether you're fixing a typo,
+exposes 23 read-only tools for exploring the Quran, all backed by the
+Quranpedia API (mushafs, ayahs, surahs, tafsir, translations, books, fatwas,
+notes, topics, reciters, and categories). Whether you're fixing a typo,
 adding a tool, or improving docs, you're welcome here.
 
 > **New here?** Skim [docs/index.md](docs/index.md) for the project overview,
@@ -94,8 +95,8 @@ explicit maintainer approval.
 - **Keep changes focused.** One concern per PR. If you find yourself writing
   "and also…" in the description, split it.
 
-See [docs/architecture.md](docs/architecture.md) for how the transport,
-dataset, and HTTP hardening fit together.
+See [docs/architecture.md](docs/architecture.md) for how the transport, the
+Quranpedia client, and HTTP hardening fit together.
 
 ## Pre-PR checklist (the quality gate)
 
@@ -105,14 +106,14 @@ Run these **in order**, every time, before opening a PR:
 yarn format              # prettier --write
 yarn lint                # eslint
 yarn build               # tsc → dist/
-yarn test                # pretest (version sync) + stdio + http end-to-end
+yarn test                # build + stdio + http end-to-end
 yarn check:submission    # MCP description length, no MUST/NEVER, full annotations
 ```
 
 Notes:
 
-- `yarn test` runs `pretest` (`scripts/check-versions.js`) which enforces
-  `package.json` ↔ `server.json` version sync. **Bump both together.**
+- `yarn test` runs `yarn build` followed by the stdio and HTTP end-to-end
+  suites, all of which hit the live `api.quranpedia.net` (network required).
 - The test scripts (`scripts/test.js`, `scripts/test-http.js`) spawn the
   compiled `dist/server.js`, which is why `yarn build` runs before them.
 - `yarn check:submission` is the same linter used before publishing — run it

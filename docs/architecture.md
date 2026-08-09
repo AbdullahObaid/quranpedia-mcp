@@ -7,23 +7,6 @@ under `docs/`.
 ## High-level overview
 
 ```
-                ┌──────────────────────────────┐
-                │   quran-search-engine (npm)  │
-                │   ─ loadQuranData            │
-                │   ─ loadMorphology           │
-                │   ─ loadWordMap              │
-                │   ─ buildInvertedIndex       │
-                │   ─ search / normalizeArabic │
-                └──────────────┬───────────────┘
-                               │
-                               ▼
-                     ┌──────────────────┐
-                     │   src/data.ts    │
-                     │  QuranDataset    │ ← gidOffsetTable (suraId → starting gid)
-                     │  memoized load   │
-                     └────────┬─────────┘
-                              │
-                              ▼
         ┌────────────────────────────────────────────┐
         │           src/create-server.ts             │
         │  new McpServer({ name, version }) +        │
@@ -38,18 +21,18 @@ under `docs/`.
    └────────────────────┘   └──────────────────────┘
 ```
 
-The five Quranpedia-backed tools reach the external API through a shared
-typed client:
+Every one of the 23 tools is a thin typed wrapper over a Quranpedia API route,
+reaching the external service through a shared typed client:
 
 ```
-   src/tools/get-tafsir.ts      ──┐
-   src/tools/get-translation.ts  ─┤
-   src/tools/get-ayah-content-options.ts ─┼──>  src/quranpedia-client.ts  ──>  api.quranpedia.net
-   src/tools/get-surah-background.ts ──┤         (typed endpoints)          (HTTPS /v1)
-   src/tools/search-quranpedia.ts ─┘         ▲
-                                             │ cache
-                                   src/quranpedia-cache.ts
-                                   (memory + optional QP_CACHE_DIR disk layer)
+   src/tools/*.ts (23 tools, mirroring API routes)
+        │
+        ▼
+   src/quranpedia-client.ts ─────>  api.quranpedia.net (HTTPS /v1)
+   (typed endpoint helpers)  ▲
+                             │ cache
+                  src/quranpedia-cache.ts
+                  (memory + optional QP_CACHE_DIR disk layer)
 ```
 
 ## Transport selection
@@ -64,7 +47,7 @@ Then it dispatches to either `runStdio()` or `runHttp(opts)`. Both call
 `createServer()` from `create-server.ts`, which:
 
 1. Constructs a fresh `McpServer({ name: 'quranpedia-mcp', version: VERSION })`.
-2. Calls `registerTools(server)`, which registers all 13 tools in alphabetical
+2. Calls `registerTools(server)`, which registers all 23 tools in alphabetical
    order for a stable `tools/list` output.
 
 Because both transports share the same `createServer()` + `registerTools()` path,
@@ -80,9 +63,14 @@ the advertised tool surface is identical regardless of transport.
   thrown as `QuranpediaError` instances carrying the HTTP `status` and `url`.
   Handlers branch on status: a 404 means "genuinely missing" (→ `null` payload),
   anything else becomes an `isError` response.
-- **Typed endpoint helpers** — `fetchAyahOptions`, `fetchAyahBook`,
-  `fetchSurahTafsirs`, `fetchTranslation`, `fetchSurahInformation`,
-  `searchQuranpedia`, each returning `{ url, data }` for attribution.
+- **Typed endpoint helpers** — one per tool, each returning `{ url, data }` for
+  attribution: `fetchAyahOptions`, `fetchAyahBook`, `fetchSurahTafsirs`,
+  `fetchTranslation`, `fetchSurahInformation`, `searchQuranpedia`,
+  `fetchMushafs`, `fetchMushaf`, `fetchMushafAyah`, `fetchMushafSurah`,
+  `fetchSurahBooks`, `fetchSurahFatwas`, `fetchTranslationBooks`,
+  `fetchAyahTranslationByBook`, `fetchTranslationAvailableLanguages`,
+  `fetchBook`, `fetchRelatedBooks`, `fetchFatwa`, `fetchNote`, `fetchTopics`,
+  `fetchReciters`, `fetchCategories`, `fetchCategoryItems`.
 
 Every request flows through `src/quranpedia-cache.ts` (`getOrSet`):
 
@@ -99,37 +87,14 @@ map), so popular ayahs never hammer the upstream in parallel.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `QP_BASE_URL` | `https://api.quranpedia.net/v1` | Upstream base URL. |
-| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1` | Book used by `get_tafsir` when `book_id` is omitted (تيسير التفسير). |
+| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1` | Book used by `get_ayah_book_content` when `book_id` is omitted (تيسير التفسير). |
 | `QP_FETCH_TIMEOUT_MS` | `30000` | Per-request upstream timeout. |
 | `QP_CACHE_TTL_MS` | `2592000000` (30 d) | Cache entry lifetime; Quranic text is static. |
 | `QP_CACHE_DIR` | _(unset)_ | Optional persistent cache directory. |
 | `QP_CACHE_MAX_ENTRIES` | `5000` | In-memory cache cap. |
 
 `/health` reports `quranpediaCache: { memoryEntries, diskEntries, hits, misses }`
-alongside the existing `status` / `dataLoaded` / `version` / `sessions` fields.
-
-## Dataset loading
-
-`src/data.ts` exposes a single memoized `QuranDataset` and three helpers:
-
-- `ensureDataLoaded(): Promise<QuranDataset>` — idempotent; concurrent callers
-  share one in-flight promise.
-- `isDataLoaded(): boolean` — synchronous check.
-- `getDataset(): QuranDataset` — throws if the dataset has not finished loading.
-
-`QuranDataset` carries four maps plus one precomputed lookup:
-
-| Field | Type | Built from |
-| --- | --- | --- |
-| `quranData` | `Map<number, QuranText>` | `loadQuranData()` |
-| `morphologyMap` | `Map<number, MorphologyAya>` | `loadMorphology()` |
-| `wordMap` | `WordMap` | `loadWordMap()` |
-| `invertedIndex` | `InvertedIndex` | `buildInvertedIndex(morphologyMap, quranData)` |
-| `gidOffsetTable` | `Map<number, number>` | single pass over `quranData.values()` |
-
-`gidOffsetTable` maps `suraId (1–114) → gid of the first verse in that sura`.
-`get_verse` and `get_verse_morphology` use it to resolve `(suraId, ayaId)` to
-`gid` in O(1) without iterating the verse map.
+alongside the existing `status` / `version` / `sessions` fields.
 
 ## HTTP transport
 
@@ -145,7 +110,7 @@ session id. Sessions are tracked in a `Map<sessionId, Session>`.
 | `POST` | `/` | Initialize new sessions and send JSON-RPC requests |
 | `GET` | `/` | Server-sent events for streaming responses |
 | `DELETE` | `/` | Close a session |
-| `GET` | `/health` | `{"status":"ok","dataLoaded":bool,"version":"…","sessions":N,"quranpediaCache":{…}}` |
+| `GET` | `/health` | `{"status":"ok","version":"…","sessions":N,"quranpediaCache":{…}}` |
 | `OPTIONS` | `*` | CORS preflight |
 
 ### Hardening
@@ -166,10 +131,9 @@ hard-exit timer.
 ## stdio transport
 
 `src/stdio.ts` connects a single `McpServer` to `StdioServerTransport`. The
-server is `connect()`-ed immediately (so clients can `initialize` and
-`tools/list` before the dataset is ready) and the dataset loads in the
-background. The dataset readiness is reported via `isDataLoaded()` from
-inside each tool handler.
+server is `connect()`-ed immediately so clients can `initialize` and
+`tools/list` right away; every tool contacts the Quranpedia API on demand
+through the shared cache.
 
 ## Docker
 

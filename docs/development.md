@@ -40,18 +40,18 @@ The HTTP dev server is also reachable for ad-hoc testing with `curl`.
 yarn test
 ```
 
-This runs `pretest` (version-consistency check via `scripts/check-versions.js`),
-then `test:stdio` and `test:http`. Both scripts:
+This runs `yarn build` (via the `test` script), then `test:stdio` and
+`test:http`. Both scripts:
 
 - spawn the compiled `dist/server.js`
 - open a real MCP client (stdio or Streamable HTTP)
-- call `tools/list` and assert that all 13 required tools are registered
+- call `tools/list` and assert that all 23 required tools are registered
 - call each tool with a happy-path argument
-- assert that annotations are present (including `openWorldHint: true` for the
-  5 Quranpedia tools)
+- assert that annotations are present, including `openWorldHint: true` for
+  every tool (all 23 contact the external Quranpedia API)
 - close the session and verify the server cleans up
 
-The stdio and HTTP suites call the Quranpedia tools against the live
+Both suites call the Quranpedia tools against the live
 `api.quranpedia.net`, so they require network access.
 
 You can run the stdio or HTTP suite on its own:
@@ -83,15 +83,21 @@ requirements (description length, forbidden words, annotations).
 
 ## Adding a new tool
 
-The tool surface is structured one file per tool under `src/tools/`. To add a
-new tool:
+The tool surface is structured one file per tool under `src/tools/`. Every
+tool is a typed wrapper over a Quranpedia API route. To add a new tool:
 
 1. **Create `src/tools/<name>.ts`** with this shape:
 
    ```ts
    import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
    import { z } from 'zod';
-   import { getDatasetOrError, jsonOk, READ_ONLY_ANNOTATIONS } from './_shared.js';
+   import { fetchYourRoute } from '../quranpedia-client.js';
+   import {
+     EXTERNAL_READ_ONLY_ANNOTATIONS,
+     isQuranpediaNotFound,
+     quranpediaErrorResponse,
+     quranpediaOk,
+   } from './_shared.js';
 
    export function register<Name>(server: McpServer): void {
      server.registerTool(
@@ -99,33 +105,36 @@ new tool:
        {
          title: '<Human title>',
          description: '<≤299 chars, no MUST/ALWAYS/NEVER/REQUIRED/SHALL words>',
-         inputSchema: z.object({ /* your Zod schema */ }),
-         annotations: READ_ONLY_ANNOTATIONS,
+         inputSchema: z.object({ /* your Zod schema, mirroring the API params */ }),
+         annotations: EXTERNAL_READ_ONLY_ANNOTATIONS,
        },
        async (args) => {
-         const loaded = getDatasetOrError();
-         if (!loaded.ok) return loaded.response;
-         // ... your handler ...
-         return jsonOk({ /* your payload */ });
+         try {
+           const { url, data } = await fetchYourRoute(args);
+           return quranpediaOk(url, { ...args, data });
+         } catch (error) {
+           if (isQuranpediaNotFound(error)) {
+             // genuinely missing → return null-style payload, not an error
+           }
+           return quranpediaErrorResponse(error);
+         }
        },
      );
    }
    ```
 
-   For a **Quranpedia-backed** tool (contacts api.quranpedia.net), use
-   `EXTERNAL_READ_ONLY_ANNOTATIONS` instead of `READ_ONLY_ANNOTATIONS`, add a
-   typed endpoint helper in `src/quranpedia-client.ts`, and build the response
-   with `quranpediaOk(url, payload)` / `quranpediaErrorResponse(error)` /
-   `isQuranpediaNotFound(error)` from `_shared.ts`. See
-   `src/tools/get-tafsir.ts` as a worked example.
+   Add a typed endpoint helper in `src/quranpedia-client.ts` that routes
+   through `quranpediaRequest()` (shared TTL cache + `source` attribution), and
+   name both the tool and the helper after the API route. See
+   `src/tools/get-book.ts` as a worked example.
 
 2. **Wire it in `src/tools/index.ts`** in alphabetical order (so `tools/list`
    output is stable).
 
 3. **Add a positive test** in `scripts/test.js` and `scripts/test-http.js`,
    plus a negative test if your tool has a `Zod.refine()` or non-trivial
-   validation. If the tool is Quranpedia-backed, add it to the `EXTERNAL_TOOLS`
-   set in both scripts (drives the `openWorldHint` annotation assertion).
+   validation. Every tool is external, so the `openWorldHint: true`
+   annotation assertion already covers it.
 
 4. **Document the tool** in `docs/tools.md` (description, schema, output,
    example, annotations).
@@ -139,7 +148,7 @@ new tool:
    ```
 
 6. **Bump the version** in `package.json` and `server.json` (keep them in
-   sync — `scripts/check-versions.js` enforces this in `pretest`).
+   sync).
 
 7. **Add a CHANGELOG entry** under the new version heading.
 
@@ -156,7 +165,7 @@ Verify the new version is live:
 
 ```bash
 curl -sS https://mcp.quran.us.kg/health
-# → {"status":"ok","dataLoaded":true,"version":"1.0.0","sessions":0,"quranpediaCache":{"memoryEntries":0,"diskEntries":0,"hits":0,"misses":0}}
+# → {"status":"ok","version":"2.0.0","sessions":0,"quranpediaCache":{"memoryEntries":0,"diskEntries":0,"hits":0,"misses":0}}
 ```
 
 ## Release
@@ -182,32 +191,40 @@ quranpedia-mcp/
 ├── src/
 │   ├── server.ts                # transport resolver
 │   ├── create-server.ts         # McpServer factory
-│   ├── data.ts                  # QuranDataset loader
 │   ├── quranpedia-client.ts     # typed Quranpedia API client + config
 │   ├── quranpedia-cache.ts      # TTL memory + optional disk cache
 │   ├── stdio.ts                 # stdio transport
 │   ├── http.ts                  # Streamable HTTP transport
 │   ├── version.ts
 │   └── tools/
-│       ├── index.ts             # registerTools() — wires all 13 tools
-│       ├── _shared.ts           # jsonOk / jsonError / getDatasetOrError / annotations
-│       ├── search.ts
-│       ├── list-surahs.ts
-│       ├── get-sura-info.ts
-│       ├── get-verse.ts
-│       ├── get-verses-by-range.ts
-│       ├── find-verses-by-root.ts
-│       ├── find-verses-by-lemma.ts
-│       ├── get-verse-morphology.ts
-│       ├── get-ayah-content-options.ts   # Quranpedia
-│       ├── get-tafsir.ts                 # Quranpedia
-│       ├── get-translation.ts            # Quranpedia
-│       ├── get-surah-background.ts       # Quranpedia
-│       └── search-quranpedia.ts          # Quranpedia
+│       ├── index.ts             # registerTools() — wires all 23 tools
+│       ├── _shared.ts           # jsonOk / jsonError / quranpediaOk / annotations
+│       ├── get-ayah-book-content.ts
+│       ├── get-ayah-options.ts
+│       ├── get-book.ts
+│       ├── get-categories.ts
+│       ├── get-category-items.ts
+│       ├── get-fatwa.ts
+│       ├── get-mushaf.ts
+│       ├── get-mushaf-ayah.ts
+│       ├── get-mushaf-surah.ts
+│       ├── get-mushafs.ts
+│       ├── get-note.ts
+│       ├── get-reciters.ts
+│       ├── get-related-books.ts
+│       ├── get-surah-books.ts
+│       ├── get-surah-fatwas.ts
+│       ├── get-surah-information.ts
+│       ├── get-surah-tafsirs.ts
+│       ├── get-topics.ts
+│       ├── get-translation.ts
+│       ├── get-translation-available-languages.ts
+│       ├── get-translation-books.ts
+│       ├── get-translation-by-book.ts
+│       └── search.ts
 ├── scripts/
 │   ├── test.js                  # stdio end-to-end
 │   ├── test-http.js             # HTTP end-to-end
-│   ├── check-versions.js        # package.json ↔ server.json
 │   └── check-submission.js      # ChatGPT submission linter
 ├── Dockerfile
 ├── docker-compose.yml

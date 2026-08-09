@@ -45,7 +45,7 @@ Claude Desktop supports both transports. Edit the config file at:
 The MCP server is hosted at `https://mcp.quran.us.kg/`. Restart Claude Desktop
 after editing the config and the tools will appear in the tool picker.
 
-### Option B — local stdio (works fully offline)
+### Option B — local stdio
 
 ```json
 {
@@ -58,8 +58,8 @@ after editing the config and the tools will appear in the tool picker.
 }
 ```
 
-This spawns the server as a child process. No internet connection needed once
-the npm package is cached.
+This spawns the server as a child process. The tools still contact the
+Quranpedia API over the network, so `api.quranpedia.net` must be reachable.
 
 ---
 
@@ -88,9 +88,8 @@ hard requirements; all of them are satisfied by this server:
    and free of system-prompt directive words. See [tools.md](tools.md) for the
    exact strings.
 3. **Explicit tool annotations** — every tool declares `readOnlyHint: true`,
-   `destructiveHint: false`, `idempotentHint: true`. The 8 dataset tools use
-   `openWorldHint: false`; the 5 Quranpedia tools use `openWorldHint: true`
-   because they contact an external service.
+   `destructiveHint: false`, `idempotentHint: true`, and `openWorldHint: true`
+   (all 23 tools contact the external Quranpedia API).
 4. **No localhost / temporary tunnels** — the endpoint is a stable Cloudflare-fronted
    subdomain.
 

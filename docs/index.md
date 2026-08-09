@@ -1,16 +1,14 @@
 # Quranpedia MCP
 
 [![npm version](https://img.shields.io/npm/v/quranpedia-mcp.svg)](https://www.npmjs.com/package/quranpedia-mcp)
-[![quran-search-engine](https://img.shields.io/npm/v/quran-search-engine.svg?label=engine&color=blue)](https://www.npmjs.com/package/quran-search-engine)
 [![license](https://img.shields.io/npm/l/quranpedia-mcp.svg)](LICENSE)
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI
-clients fast, accurate, hallucination-free access to the Quran — search and navigation
-through the [quran-search-engine](https://www.npmjs.com/package/quran-search-engine)
-package, plus tafsir, translations, and surah background through the
-[Quranpedia](https://api.quranpedia.net/v1) API.
+clients fast, accurate, hallucination-free access to the Quran — mushafs, ayahs,
+surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and
+categories — all backed by the [Quranpedia](https://api.quranpedia.net/v1) API.
 
-> Explore the Quran through 13 MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quran.us.kg.
+> Explore the Quran through 23 MCP tools — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quran.us.kg.
 
 The server is publicly hosted at **<https://mcp.quran.us.kg>** (Cloudflare-fronted, stable
 subdomain of `quran.us.kg`) and exposes its full tool surface over both
@@ -45,29 +43,39 @@ MCP client that supports the stdio transport.
 
 ## What can the server do?
 
-Thirteen tools, all read-only. Eight are pure lookups against the in-memory
-Quran dataset (annotated `openWorldHint: false`); five contact the Quranpedia
-API (annotated `openWorldHint: true`):
+Twenty-three tools, all read-only and all backed by the Quranpedia API
+(`https://api.quranpedia.net/v1`). Each tool mirrors the API route it calls and
+is annotated `openWorldHint: true`:
 
-| Tool | Purpose |
+| Tool | API route |
 | --- | --- |
-| `search` | Full-text search with Arabic normalization, lemma, and root matching. |
-| `list_surahs` | Return all 114 surahs with id, names, verse count, juz list, page range. |
-| `get_sura_info` | Look up one surah by id, Arabic name, English name, or romanization. |
-| `get_verse` | Fetch one verse by global id or by `(suraId, ayaId)`. |
-| `get_verses_by_range` | Fetch verses by Quran range syntax (`"2:255"`, `"1:1-7"`, `"2:"`). |
-| `find_verses_by_root` | Find verses by normalized Arabic root via the inverted index. |
-| `find_verses_by_lemma` | Find verses by normalized lemma via the inverted index. |
-| `get_verse_morphology` | Lemmas and roots for a single verse. |
-| `get_ayah_content_options` | *(Quranpedia)* List the related content available for one ayah (tafsir, e3rab, asbab, translations, …). |
-| `get_tafsir` | *(Quranpedia)* Exegesis content for one ayah from a tafsir book (default: Taysir al-Tafsir). |
-| `get_translation` | *(Quranpedia)* Translations of one ayah in one language, or grouped by all available languages. |
-| `get_surah_background` | *(Quranpedia)* Scholarly surah background: introduction, revelation type, virtues, topics, purposes. |
-| `search_quranpedia` | *(Quranpedia)* Search the encyclopedia (books, fatwas, notes, topics) by keyword. |
+| `get_ayah_book_content` | `GET /ayah/{surah_id}/{ayah_number}/book/{book_id}` |
+| `get_ayah_options` | `GET /ayah/{surah_id}/{ayah_number}/options` |
+| `get_book` | `GET /book/{book_id}` |
+| `get_categories` | `GET /categories/{type?}` |
+| `get_category_items` | `GET /category/{category_id}/{type}` |
+| `get_fatwa` | `GET /fatwa/{fatwa_id}` |
+| `get_mushaf` | `GET /mushafs/{id}` |
+| `get_mushaf_ayah` | `GET /mushafs/{mushaf_id}/{surah_id}/{ayah_number}` |
+| `get_mushaf_surah` | `GET /mushafs/{mushaf_id}/{surah_id}` |
+| `get_mushafs` | `GET /mushafs` |
+| `get_note` | `GET /note/{note_id}` |
+| `get_reciters` | `GET /reciters` |
+| `get_related_books` | `GET /related-books/{book_id}` |
+| `get_surah_books` | `GET /surah/books/{surah_id}` |
+| `get_surah_fatwas` | `GET /surah/fatwas/{surah_id}` |
+| `get_surah_information` | `GET /surah/information/{surah_id}` |
+| `get_surah_tafsirs` | `GET /surah/tafsirs/{surah_id}` |
+| `get_topics` | `GET /topics` |
+| `get_translation` | `GET /translations/{surah_id}/{ayah_number}/{language?}` |
+| `get_translation_available_languages` | `GET /translations/available-languages/{surah_id}/{ayah_number}` |
+| `get_translation_books` | `GET /translation-books/{language_code?}` |
+| `get_translation_by_book` | `GET /translation/{book_id}/{surah_id}/{ayah_number?}` |
+| `search` | `GET /search/{query}/{type?}` |
 
-Quranpedia tools work offline-friendly: responses are cached for 30 days in
-memory (and on disk when `QP_CACHE_DIR` is set), and each response carries a
-`source` block so the answer can be attributed to its upstream URL.
+Responses are cached for 30 days in memory (and on disk when `QP_CACHE_DIR` is
+set), and each response carries a `source` block so the answer can be attributed
+to its upstream URL.
 
 Full reference with schemas and examples: [tools.md](tools.md).
 
@@ -75,5 +83,5 @@ Full reference with schemas and examples: [tools.md](tools.md).
 
 - [Tools reference](tools.md) — every tool, its schema, response shape, and a live example.
 - [Integrations](integrations.md) — Claude Desktop, Claude Web, ChatGPT, Cursor, VS Code, and others.
-- [Architecture](architecture.md) — internals: transports, dataset loading, HTTP hardening, Docker.
+- [Architecture](architecture.md) — internals: transports, HTTP hardening, Docker.
 - [Development](development.md) — build, test, lint, add a new tool, deploy.
