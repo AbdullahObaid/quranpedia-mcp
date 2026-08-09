@@ -37,28 +37,30 @@ function waitForPort() {
 }
 
 const REQUIRED_TOOLS = [
+  'get_ayah_book_content',
+  'get_ayah_options',
+  'get_book',
+  'get_categories',
+  'get_category_items',
+  'get_fatwa',
+  'get_mushaf',
+  'get_mushaf_ayah',
+  'get_mushaf_surah',
+  'get_mushafs',
+  'get_note',
+  'get_reciters',
+  'get_related_books',
+  'get_surah_books',
+  'get_surah_fatwas',
+  'get_surah_information',
+  'get_surah_tafsirs',
+  'get_topics',
+  'get_translation',
+  'get_translation_available_languages',
+  'get_translation_books',
+  'get_translation_by_book',
   'search',
-  'list_surahs',
-  'get_sura_info',
-  'get_verse',
-  'get_verses_by_range',
-  'find_verses_by_root',
-  'find_verses_by_lemma',
-  'get_verse_morphology',
-  'get_ayah_content_options',
-  'get_tafsir',
-  'get_translation',
-  'get_surah_background',
-  'search_quranpedia',
 ];
-
-const EXTERNAL_TOOLS = new Set([
-  'get_ayah_content_options',
-  'get_tafsir',
-  'get_translation',
-  'get_surah_background',
-  'search_quranpedia',
-]);
 
 function assert(condition, message) {
   if (!condition) throw new Error(`assertion failed: ${message}`);
@@ -76,6 +78,10 @@ async function callTool(client, name, args) {
     { method: 'tools/call', params: { name, arguments: args } },
     CallToolResultSchema,
   );
+}
+
+function isObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 async function main() {
@@ -100,123 +106,234 @@ async function main() {
     assert(toolNames.includes(required), `expected tool "${required}" to be registered`);
   }
 
-  // Every tool must declare all four annotation hints. Quranpedia-backed
-  // tools are open-world (they contact an external service); the dataset
-  // tools are closed-world.
+  // Every tool is Quranpedia-backed: all four annotation hints with
+  // openWorldHint=true (they contact the external Quranpedia service).
   for (const tool of toolsResult.tools) {
     const ann = tool.annotations ?? {};
-    const expectedOpenWorld = EXTERNAL_TOOLS.has(tool.name);
     assert(
       ann.readOnlyHint === true &&
         ann.destructiveHint === false &&
-        ann.openWorldHint === expectedOpenWorld &&
+        ann.openWorldHint === true &&
         ann.idempotentHint === true,
-      `tool "${tool.name}" has unexpected annotations (got ${JSON.stringify(ann)}, openWorldHint expected ${expectedOpenWorld})`,
+      `tool "${tool.name}" has unexpected annotations (got ${JSON.stringify(ann)}, openWorldHint expected true)`,
     );
   }
 
-  // search — happy path
-  const searchResult = await callTool(client, 'search', {
-    query: 'الحمد',
-    lemma: true,
-    root: true,
-    page: 1,
-    limit: 3,
+  // get_ayah_book_content — content or not-found fallback are both objects
+  const ayahBookContentResult = await callTool(client, 'get_ayah_book_content', {
+    surah_id: 1,
+    ayah_number: 1,
+    book_id: 4,
   });
-  parsePayload(searchResult);
-
-  // list_surahs
-  const listResult = await callTool(client, 'list_surahs', {});
-  const listPayload = parsePayload(listResult);
-  assert(listPayload.surahs.length === 114, `list_surahs should return 114, got ${listPayload.surahs.length}`);
-
-  // get_sura_info
-  const suraResult = await callTool(client, 'get_sura_info', { identifier: 2 });
-  const suraPayload = parsePayload(suraResult);
-  assert(suraPayload.sura && suraPayload.sura.id === 2, 'get_sura_info(2) should return Al-Baqarah');
-
-  // get_verse
-  const verseResult = await callTool(client, 'get_verse', { suraId: 2, ayaId: 255 });
-  const versePayload = parsePayload(verseResult);
-  assert(versePayload.verse && versePayload.verse.gid === 262, 'get_verse(2:255) should resolve to Ayat al-Kursi');
-
-  // get_verses_by_range
-  const rangeResult = await callTool(client, 'get_verses_by_range', { range: '1:1-7' });
-  const rangePayload = parsePayload(rangeResult);
-  assert(rangePayload.verses.length === 7, "'1:1-7' should return 7 verses");
-
-  // find_verses_by_lemma
-  const lemmaResult = await callTool(client, 'find_verses_by_lemma', { lemma: 'حمد', limit: 3 });
-  const lemmaPayload = parsePayload(lemmaResult);
-  assert(lemmaPayload.verses.length > 0, "find_verses_by_lemma('حمد') should return verses");
-
-  // find_verses_by_root — unknown root
-  const noRoot = await callTool(client, 'find_verses_by_root', { root: 'XYZNOMATCH' });
-  const noRootPayload = parsePayload(noRoot);
+  const ayahBookContentPayload = parsePayload(ayahBookContentResult);
   assert(
-    noRootPayload.verses.length === 0 && noRootPayload.pagination.totalResults === 0,
-    "find_verses_by_root('XYZNOMATCH') should return empty pagination",
+    isObject(ayahBookContentPayload),
+    'get_ayah_book_content(1,1,4) should return a payload object',
   );
 
-  // get_verse_morphology
-  const morphResult = await callTool(client, 'get_verse_morphology', { gid: 1 });
-  const morphPayload = parsePayload(morphResult);
+  // get_ayah_options
+  const ayahOptionsResult = await callTool(client, 'get_ayah_options', {
+    surah_id: 1,
+    ayah_number: 1,
+  });
+  const ayahOptionsPayload = parsePayload(ayahOptionsResult);
   assert(
-    morphPayload.morphology && Array.isArray(morphPayload.morphology.lemmas),
-    'get_verse_morphology should return morphology with lemmas array',
+    isObject(ayahOptionsPayload.options) && Array.isArray(ayahOptionsPayload.options.options),
+    'get_ayah_options(1,1) should return an options object with an options array',
   );
 
-  // get_ayah_content_options
-  const optionsResult = await callTool(client, 'get_ayah_content_options', { surah: 1, ayah: 1 });
-  const optionsPayload = parsePayload(optionsResult);
+  // get_book
+  const bookResult = await callTool(client, 'get_book', { book_id: 4 });
+  const bookPayload = parsePayload(bookResult);
+  assert(isObject(bookPayload.book), 'get_book(4) should return a book object');
+
+  // get_categories
+  const categoriesResult = await callTool(client, 'get_categories', { type: 'books' });
+  const categoriesPayload = parsePayload(categoriesResult);
   assert(
-    optionsPayload.ayah && optionsPayload.ayah.options.includes('tafsir'),
-    'get_ayah_content_options(1,1) should include tafsir option',
-  );
-  assert(
-    optionsPayload.source?.provider === 'quranpedia',
-    'get_ayah_content_options should carry a quranpedia source block',
+    Array.isArray(categoriesPayload.categories) && categoriesPayload.categories.length >= 1,
+    'get_categories(books) should return a non-empty categories array',
   );
 
-  // get_tafsir — default book
-  const tafsirResult = await callTool(client, 'get_tafsir', { surah: 2, ayah: 255 });
-  const tafsirPayload = parsePayload(tafsirResult);
-  assert(tafsirPayload.book && tafsirPayload.book.id === 1, 'get_tafsir(2,255) should default to book 1');
-  assert(Array.isArray(tafsirPayload.content), 'get_tafsir(2,255) should return content array');
+  // get_category_items
+  const categoryItemsResult = await callTool(client, 'get_category_items', {
+    category_id: 1,
+    type: 'books',
+  });
+  const categoryItemsPayload = parsePayload(categoryItemsResult);
+  assert(
+    Array.isArray(categoryItemsPayload.items),
+    'get_category_items(1,books) should return an items array',
+  );
+
+  // get_fatwa
+  const fatwaResult = await callTool(client, 'get_fatwa', { fatwa_id: 1 });
+  const fatwaPayload = parsePayload(fatwaResult);
+  assert(isObject(fatwaPayload.fatwa), 'get_fatwa(1) should return a fatwa object');
+
+  // get_mushaf
+  const mushafResult = await callTool(client, 'get_mushaf', { id: 1 });
+  const mushafPayload = parsePayload(mushafResult);
+  assert(isObject(mushafPayload.mushaf), 'get_mushaf(1) should return a mushaf object');
+
+  // get_mushaf_ayah
+  const mushafAyahResult = await callTool(client, 'get_mushaf_ayah', {
+    mushaf_id: 1,
+    surah_id: 1,
+    ayah_number: 1,
+  });
+  const mushafAyahPayload = parsePayload(mushafAyahResult);
+  assert(
+    isObject(mushafAyahPayload.ayah) &&
+      typeof mushafAyahPayload.ayah.text === 'string' &&
+      mushafAyahPayload.ayah.text.length > 0,
+    'get_mushaf_ayah(1,1,1) should return an ayah with non-empty text',
+  );
+
+  // get_mushaf_surah
+  const mushafSurahResult = await callTool(client, 'get_mushaf_surah', {
+    mushaf_id: 1,
+    surah_id: 1,
+  });
+  const mushafSurahPayload = parsePayload(mushafSurahResult);
+  assert(
+    Array.isArray(mushafSurahPayload.ayahs) && mushafSurahPayload.ayahs.length >= 1,
+    'get_mushaf_surah(1,1) should return a non-empty ayahs array',
+  );
+
+  // get_mushafs
+  const mushafsResult = await callTool(client, 'get_mushafs', {});
+  const mushafsPayload = parsePayload(mushafsResult);
+  assert(
+    Array.isArray(mushafsPayload.mushafs) && mushafsPayload.mushafs.length >= 1,
+    'get_mushafs should return a non-empty mushafs array',
+  );
+
+  // get_note — /note/{id} returns a list of note records
+  const noteResult = await callTool(client, 'get_note', { note_id: 1 });
+  const notePayload = parsePayload(noteResult);
+  assert(
+    notePayload.note !== null && typeof notePayload.note === 'object',
+    'get_note(1) should return a non-null note payload',
+  );
+
+  // get_reciters
+  const recitersResult = await callTool(client, 'get_reciters', {});
+  const recitersPayload = parsePayload(recitersResult);
+  assert(
+    Array.isArray(recitersPayload.reciters) && recitersPayload.reciters.length >= 1,
+    'get_reciters should return a non-empty reciters array',
+  );
+
+  // get_related_books
+  const relatedBooksResult = await callTool(client, 'get_related_books', { book_id: 4 });
+  const relatedBooksPayload = parsePayload(relatedBooksResult);
+  assert(
+    Array.isArray(relatedBooksPayload.related_books),
+    'get_related_books(4) should return a related_books array',
+  );
+
+  // get_surah_books
+  const surahBooksResult = await callTool(client, 'get_surah_books', { surah_id: 1 });
+  const surahBooksPayload = parsePayload(surahBooksResult);
+  assert(
+    Array.isArray(surahBooksPayload.books) && surahBooksPayload.books.length >= 1,
+    'get_surah_books(1) should return a non-empty books array',
+  );
+
+  // get_surah_fatwas
+  const surahFatwasResult = await callTool(client, 'get_surah_fatwas', { surah_id: 1 });
+  const surahFatwasPayload = parsePayload(surahFatwasResult);
+  assert(
+    Array.isArray(surahFatwasPayload.fatwas) && surahFatwasPayload.fatwas.length >= 1,
+    'get_surah_fatwas(1) should return a non-empty fatwas array',
+  );
+
+  // get_surah_information
+  const surahInfoResult = await callTool(client, 'get_surah_information', { surah_id: 1 });
+  const surahInfoPayload = parsePayload(surahInfoResult);
+  assert(
+    isObject(surahInfoPayload.information),
+    'get_surah_information(1) should return an information object',
+  );
+
+  // get_surah_tafsirs
+  const surahTafsirsResult = await callTool(client, 'get_surah_tafsirs', { surah_id: 1 });
+  const surahTafsirsPayload = parsePayload(surahTafsirsResult);
+  assert(
+    Array.isArray(surahTafsirsPayload.tafsirs) && surahTafsirsPayload.tafsirs.length >= 1,
+    'get_surah_tafsirs(1) should return a non-empty tafsirs array',
+  );
+
+  // get_topics
+  const topicsResult = await callTool(client, 'get_topics', {});
+  const topicsPayload = parsePayload(topicsResult);
+  assert(
+    Array.isArray(topicsPayload.topics) && topicsPayload.topics.length >= 1,
+    'get_topics should return a non-empty topics array',
+  );
 
   // get_translation
   const translationResult = await callTool(client, 'get_translation', {
-    surah: 2,
-    ayah: 255,
+    surah_id: 1,
+    ayah_number: 1,
     language: 'en',
   });
   const translationPayload = parsePayload(translationResult);
   assert(
-    Array.isArray(translationPayload.translations) && translationPayload.translations.length > 0,
-    'get_translation(2,255,en) should return translations',
+    Array.isArray(translationPayload.translations) && translationPayload.translations.length >= 1,
+    'get_translation(1,1,en) should return translations',
   );
 
-  // get_surah_background
-  const backgroundResult = await callTool(client, 'get_surah_background', { surah: 2 });
-  const backgroundPayload = parsePayload(backgroundResult);
+  // get_translation_available_languages
+  const availableLanguagesResult = await callTool(client, 'get_translation_available_languages', {
+    surah_id: 1,
+    ayah_number: 1,
+  });
+  const availableLanguagesPayload = parsePayload(availableLanguagesResult);
   assert(
-    backgroundPayload.information && backgroundPayload.information.surah_type,
-    'get_surah_background(2) should return surah type info',
+    Array.isArray(availableLanguagesPayload.languages) && availableLanguagesPayload.languages.length >= 1,
+    'get_translation_available_languages(1,1) should return languages',
   );
 
-  // search_quranpedia — all types and a single type
-  const qpSearchResult = await callTool(client, 'search_quranpedia', { query: 'رحمن' });
-  const qpSearchPayload = parsePayload(qpSearchResult);
-  assert(qpSearchPayload.results && typeof qpSearchPayload.results === 'object', 'search_quranpedia should return results');
+  // get_translation_books
+  const translationBooksResult = await callTool(client, 'get_translation_books', { language: 'en' });
+  const translationBooksPayload = parsePayload(translationBooksResult);
+  assert(
+    Array.isArray(translationBooksPayload.books),
+    'get_translation_books(en) should return a books array',
+  );
 
-  // Negative: unknown ayah (1:8 does not exist) → null payload, not an error
-  const missingAyah = await callTool(client, 'get_ayah_content_options', { surah: 1, ayah: 8 });
+  // get_translation_by_book
+  const translationByBookResult = await callTool(client, 'get_translation_by_book', {
+    book_id: 16,
+    surah_id: 1,
+    ayah_number: 1,
+  });
+  const translationByBookPayload = parsePayload(translationByBookResult);
+  assert(
+    isObject(translationByBookPayload.translation),
+    'get_translation_by_book(16,1,1) should return a translation object',
+  );
+
+  // search
+  const searchResult = await callTool(client, 'search', { query: 'رحمة' });
+  const searchPayload = parsePayload(searchResult);
+  assert(isObject(searchPayload.results), "search('رحمة') should return a results object");
+
+  // Negative: get_ayah_options on a nonexistent ayah (1:8) → options: null
+  const missingAyah = await callTool(client, 'get_ayah_options', { surah_id: 1, ayah_number: 8 });
   const missingAyahPayload = parsePayload(missingAyah);
-  assert(missingAyahPayload.ayah === null, 'get_ayah_content_options(1,8) should return ayah: null');
+  assert(missingAyahPayload.options === null, 'get_ayah_options(1,8) should return options: null');
 
-  // Negative: invalid search type → tool error
-  const badTypeResult = await callTool(client, 'search_quranpedia', { query: 'رحمن', type: 'bogus' });
-  assert(badTypeResult.isError === true, "search_quranpedia('bogus' type) should return isError");
+  // Negative: get_book with a nonexistent id → book: null
+  const missingBook = await callTool(client, 'get_book', { book_id: 99999999 });
+  const missingBookPayload = parsePayload(missingBook);
+  assert(missingBookPayload.book === null, 'get_book(99999999) should return book: null');
+
+  // Negative: get_categories with an invalid enum → tool error
+  const badTypeResult = await callTool(client, 'get_categories', { type: 'bogus' });
+  assert(badTypeResult.isError === true, "get_categories('bogus' type) should return isError");
 
   // Negative: no session id on a non-initialize POST should be rejected.
   const badResponse = await fetch(`${base}/`, {
