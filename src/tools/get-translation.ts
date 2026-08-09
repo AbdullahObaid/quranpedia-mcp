@@ -14,27 +14,29 @@ export function registerGetTranslation(server: McpServer): void {
     {
       title: 'Get Translation',
       description:
-        'Get human-readable translations of one ayah from Quranpedia. Pass a language code (en, fr, es, ur, and others) for one language, or omit language to get every available translation of the ayah grouped by language code.',
+        'Fetch translations of one ayah from the Quranpedia API, for one language or grouped by all available languages.',
       inputSchema: z.object({
-        surah: z.number().int().min(1).max(114),
-        ayah: z.number().int().min(1).max(286),
+        surah_id: z.number().int().min(1).max(114),
+        ayah_number: z.number().int().min(1).max(286),
         language: z.string().min(2).max(16).optional(),
       }),
       annotations: EXTERNAL_READ_ONLY_ANNOTATIONS,
     },
-    async ({ surah, ayah, language }) => {
+    async ({ surah_id, ayah_number, language }) => {
       const lang = language?.toLowerCase();
       try {
-        const { url, data } = await fetchTranslation(surah, ayah, lang);
+        const { url, data } = await fetchTranslation(surah_id, ayah_number, lang);
         return quranpediaOk(url, {
-          ayah: `${surah}:${ayah}`,
+          surah_id,
+          ayah_number,
           language: lang ?? null,
           translations: data,
         });
       } catch (error) {
         if (isQuranpediaNotFound(error)) {
           return quranpediaOk(error.url, {
-            ayah: `${surah}:${ayah}`,
+            surah_id,
+            ayah_number,
             language: lang ?? null,
             translations: null,
           });
