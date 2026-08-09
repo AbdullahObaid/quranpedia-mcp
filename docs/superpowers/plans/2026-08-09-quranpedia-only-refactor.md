@@ -575,6 +575,39 @@ git commit -m "docs: document 23-tool Quranpedia-only surface"
 
 ---
 
+### Task 11b: Fix Dockerfile stale `quran-search-engine` reference (human ruling, 2026-08-09)
+
+**Files:**
+- Modify: `Dockerfile`
+
+Task 8 removed the `quran-search-engine` dependency, so the Dockerfile's
+sourcemap-delete line would fail (`find` on a nonexistent path breaks
+`docker build`).
+
+- [ ] **Step 1: Edit `Dockerfile`**
+
+Remove line 17 (` && find node_modules/quran-search-engine -name '*.map' -delete`).
+Keep the `yarn cache clean` step. The runtime install step becomes:
+
+```
+RUN yarn install --frozen-lockfile --production \
+ && yarn cache clean
+```
+
+- [ ] **Step 2: Verify**
+
+`docker build` succeeds (or, if Docker is unavailable, confirm the file is
+valid: `node_modules/quran-search-engine` appears nowhere in the Dockerfile).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add Dockerfile
+git commit -m "fix(docker): drop stale quran-search-engine sourcemap cleanup"
+```
+
+---
+
 ### Task 12: Update presentation + re-export artifacts
 
 **Files:**
