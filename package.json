@@ -1,7 +1,7 @@
 {
   "name": "quranpedia-mcp",
-  "version": "1.0.0",
-  "description": "Explore the Quran through MCP tools — verses, surahs, lemmas, roots, morphology, tafsir, translations, and Quranpedia encyclopedia search. Hosted at mcp.quranpedia.net.",
+  "version": "2.0.0",
+  "description": "Explore the Quran through 23 MCP tools backed by the Quranpedia API — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quran.us.kg.",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -33,6 +33,9 @@
     "quran",
     "tafsir",
     "translation",
+    "mushaf",
+    "ayah",
+    "surah",
     "quranpedia",
     "arabic",
     "claude",
@@ -48,7 +51,6 @@
   "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
-    "quran-search-engine": "^0.3.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
