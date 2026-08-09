@@ -10,6 +10,9 @@ import { registerGetSurahFatwas } from './get-surah-fatwas.js';
 import { registerGetSurahInformation } from './get-surah-information.js';
 import { registerGetSurahTafsirs } from './get-surah-tafsirs.js';
 import { registerGetTranslation } from './get-translation.js';
+import { registerGetTranslationAvailableLanguages } from './get-translation-available-languages.js';
+import { registerGetTranslationBooks } from './get-translation-books.js';
+import { registerGetTranslationByBook } from './get-translation-by-book.js';
 import { registerSearch } from './search.js';
 
 /**
@@ -28,5 +31,8 @@ export function registerTools(server: McpServer): void {
   registerGetSurahInformation(server);
   registerGetSurahTafsirs(server);
   registerGetTranslation(server);
+  registerGetTranslationAvailableLanguages(server);
+  registerGetTranslationBooks(server);
+  registerGetTranslationByBook(server);
   registerSearch(server);
 }
