@@ -8,7 +8,6 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from './create-server.js';
-import { ensureDataLoaded, isDataLoaded } from './data.js';
 import { quranpediaCacheStats } from './quranpedia-client.js';
 import { VERSION } from './version.js';
 
@@ -132,7 +131,6 @@ export async function runHttp(
         res.end(
           JSON.stringify({
             status: 'ok',
-            dataLoaded: isDataLoaded(),
             version: VERSION,
             sessions: sessions.size,
             quranpediaCache: quranpediaCacheStats(),
@@ -225,10 +223,6 @@ export async function runHttp(
     }
   }, 60_000);
   reaper.unref();
-
-  // Load data BEFORE listening — cold start is under 1s, so there's no
-  // reason to ever serve "still loading" to an HTTP client.
-  await ensureDataLoaded();
 
   await new Promise<void>((resolve): void => {
     httpServer.listen(opts.port, opts.host, resolve);

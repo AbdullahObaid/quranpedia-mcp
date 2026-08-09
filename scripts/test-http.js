@@ -83,7 +83,7 @@ async function main() {
   const base = `http://127.0.0.1:${port}`;
 
   const health = await fetch(`${base}/health`).then((r) => r.json());
-  if (!health.dataLoaded) throw new Error('Expected dataLoaded=true from /health');
+  if (health.status !== 'ok') throw new Error('Expected status=ok from /health');
 
   const client = new Client({ name: 'quranpedia-mcp-http-test', version: '0.1.0' });
   const transport = new StreamableHTTPClientTransport(new URL(`${base}/`));
