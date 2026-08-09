@@ -1,8 +1,9 @@
 # Quranpedia MCP — Project Presentation
 
-> A slide-style walkthrough of `quranpedia-mcp` v1.0.0 (MIT).
-> An MCP server exposing 13 read-only tools for exploring the Quran —
-> dataset lookups (local, offline) + Quranpedia encyclopedia lookups (external API).
+> A slide-style walkthrough of `quranpedia-mcp` v2.0.0 (MIT).
+> An MCP server exposing **23 read-only tools**, all backed by the Quranpedia
+> API (`https://api.quranpedia.net/v1`) — every tool named to mirror the API
+> route it calls. No bundled dataset; network access required for all tools.
 
 ---
 
@@ -38,18 +39,43 @@ quranpedia-mcp/
 └── src/
     ├── server.ts            # Transport resolver (CLI flag → TRANSPORT env → stdio)
     ├── create-server.ts     # McpServer factory (name + version + registerTools)
-    ├── data.ts              # QuranDataset loader (memoized, gidOffsetTable)
     ├── stdio.ts             # stdio transport
     ├── http.ts              # Streamable HTTP transport + hardening
     ├── quranpedia-client.ts # Typed Quranpedia API client + env config
     ├── quranpedia-cache.ts  # TTL cache: memory + optional disk layer
     ├── version.ts           # Reads version from package.json
-    └── tools/               # 13 tools, one file each + index.ts + _shared.ts
+    └── tools/               # 23 tools, one file each + index.ts + _shared.ts
 ```
 
 ---
 
-## 2. Protocols
+## 2. v2.0.0 breaking change
+
+v1.0.0 → v2.0.0 is a **breaking** release. The server no longer bundles an
+offline Quran dataset; every tool now talks to `api.quranpedia.net`:
+
+- **8 removed** — the offline dataset-backed tools (full-text search, surahs,
+  verses, ranges, root search, lemma search, morphology) have no Quranpedia
+  equivalent and are gone.
+- **5 renamed** to mirror their API routes:
+
+| Old name                   | New name                  |
+| -------------------------- | ------------------------- |
+| `get_ayah_content_options` | `get_ayah_options`        |
+| `get_tafsir`               | `get_ayah_book_content`   |
+| `get_translation`          | `get_translation` (unchanged) |
+| `get_surah_background`     | `get_surah_information`   |
+| `search_quranpedia`        | `search`                  |
+
+- **18 added** — mushaf, surah, translation, library, and index tools (§4).
+
+Net surface: **23 read-only tools**, all `openWorldHint: true`, all backed by
+`api.quranpedia.net`. No new environment variables; the existing 14 all still
+apply (§7).
+
+---
+
+## 3. Protocols
 
 | Layer            | Protocol / mechanism                                                                  |
 | ---------------- | ------------------------------------------------------------------------------------- |
@@ -69,38 +95,36 @@ Both transports share the same `createServer()` path → identical tool surface.
 
 ---
 
-## 3. Tools (13, all read-only)
+## 4. Tools (23, all read-only)
 
-**8 dataset tools** (`openWorldHint: false`, offline, in-memory dataset):
+Every tool is a thin typed wrapper over `https://api.quranpedia.net/v1`, named
+after the route it calls, and annotated `openWorldHint: true`.
 
-> ℹ️ **No API is involved here** — not even Quranpedia. The Quran text, morphology,
-> and word map ship _inside_ the `quran-search-engine` npm dependency (~20 MB
-> `dist/index.js`). `src/data.ts` loads that bundled data into memory at startup
-> (`loadQuranData()` / `loadMorphology()` / `loadWordMap()`) and these 8 tools read
-> the in-memory maps directly — zero network calls. "Dataset" = bundled package data,
-> not a database or service you run. The **only** external API is `api.quranpedia.net`,
-> used by the 5 Quranpedia tools below.
-
-| Tool                   | Purpose                                                                     |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `search`               | Full-text search w/ Arabic normalization, lemma + root matching, highlights |
-| `list_surahs`          | All 114 surahs: names, verse counts, juz list, Mushaf pages                 |
-| `get_sura_info`        | One surah by id / Arabic / English / romanization                           |
-| `get_verse`            | One verse by `gid` or `(suraId, ayaId)`                                     |
-| `get_verses_by_range`  | Range syntax: `2:255`, `1:1-7`, `2:`                                        |
-| `find_verses_by_root`  | Inverted index lookup by Arabic root                                        |
-| `find_verses_by_lemma` | Inverted index lookup by lemma                                              |
-| `get_verse_morphology` | Lemmas + roots for one verse                                                |
-
-**5 Quranpedia tools** (`openWorldHint: true`, external `api.quranpedia.net`):
-
-| Tool                       | Purpose                                                         |
-| -------------------------- | --------------------------------------------------------------- |
-| `get_ayah_content_options` | Related content available per ayah (tafsir, e3rab, asbab, …)    |
-| `get_tafsir`               | Exegesis from a book (default: Taysir al-Tafsir, book id 1)     |
-| `get_translation`          | Translations per language, or grouped by all languages          |
-| `get_surah_background`     | Scholarly surah background (revelation type, topics, purposes…) |
-| `search_quranpedia`        | Encyclopedia search (books, fatwas, notes, topics)              |
+| #  | Tool                             | API route                                                  |
+| -- | -------------------------------- | ---------------------------------------------------------- |
+| 1  | `get_ayah_book_content`          | `GET /ayah/{surah_id}/{ayah_number}/book/{book_id}`        |
+| 2  | `get_ayah_options`               | `GET /ayah/{surah_id}/{ayah_number}/options`               |
+| 3  | `get_book`                       | `GET /book/{book_id}`                                      |
+| 4  | `get_categories`                 | `GET /categories/{type?}`                                  |
+| 5  | `get_category_items`             | `GET /category/{category_id}/{type}`                       |
+| 6  | `get_fatwa`                      | `GET /fatwa/{fatwa_id}`                                    |
+| 7  | `get_mushaf`                     | `GET /mushafs/{id}`                                        |
+| 8  | `get_mushaf_ayah`                | `GET /mushafs/{mushaf_id}/{surah_id}/{ayah_number}`        |
+| 9  | `get_mushaf_surah`               | `GET /mushafs/{mushaf_id}/{surah_id}`                      |
+| 10 | `get_mushafs`                    | `GET /mushafs`                                             |
+| 11 | `get_note`                       | `GET /note/{note_id}`                                      |
+| 12 | `get_reciters`                   | `GET /reciters`                                            |
+| 13 | `get_related_books`              | `GET /related-books/{book_id}`                             |
+| 14 | `get_surah_books`                | `GET /surah/books/{surah_id}`                              |
+| 15 | `get_surah_fatwas`               | `GET /surah/fatwas/{surah_id}`                             |
+| 16 | `get_surah_information`          | `GET /surah/information/{surah_id}`                        |
+| 17 | `get_surah_tafsirs`              | `GET /surah/tafsirs/{surah_id}`                            |
+| 18 | `get_topics`                     | `GET /topics`                                              |
+| 19 | `get_translation`                | `GET /translations/{surah_id}/{ayah_number}/{language?}`   |
+| 20 | `get_translation_available_languages` | `GET /translations/available-languages/{surah_id}/{ayah_number}` |
+| 21 | `get_translation_books`          | `GET /translation-books/{language_code?}`                  |
+| 22 | `get_translation_by_book`        | `GET /translation/{book_id}/{surah_id}/{ayah_number?}`     |
+| 23 | `search`                         | `GET /search/{query}/{type?}`                              |
 
 Conventions: success = `{content:[{type:"text",text:JSON}]}`; errors = `isError:true`;
 genuinely missing resources return `null` (not an error). Every Quranpedia response
@@ -108,26 +132,22 @@ carries a `source: {provider, url}` block for attribution.
 
 ---
 
-## 4. Docs
+## 5. Docs
 
 | File                   | Contents                                                                     |
 | ---------------------- | ---------------------------------------------------------------------------- |
 | `docs/index.md`        | Overview, public endpoint, tool table                                        |
-| `docs/tools.md`        | Full reference: schema, response shapes, examples for every tool (576 lines) |
+| `docs/tools.md`        | Full reference: schema, response shapes, examples for every tool (623 lines) |
 | `docs/integrations.md` | Claude Desktop/Web, ChatGPT, Cursor, VS Code, Smithery, Docker               |
-| `docs/architecture.md` | Internals: transports, dataset loading, HTTP hardening, Docker, env tables   |
+| `docs/architecture.md` | Internals: transports, API client, HTTP hardening, Docker, env tables        |
 | `docs/development.md`  | Build, test, lint, add a tool, deploy, release, repo layout                  |
 | `README.md`            | Landing page + badges (npm, Smithery, license, engine)                       |
-| `CHANGELOG.md`         | Keep-a-Changelog; 1.0.0 → 5 Quranpedia tools                                 |
+| `CHANGELOG.md`         | Keep-a-Changelog; 1.0.0 → 2.0.0 (Quranpedia-only history)                    |
 | `CONTRIBUTING.md`      | Contribution workflow, commit/hook guidance                                  |
-
-> ⚠️ **Stale docs:** `development.md`, `CONTRIBUTING.md`, and `CHANGELOG.md` still
-> reference `scripts/check-versions.js` and a `pretest` hook — that script was
-> deleted and `package.json`'s `test` no longer calls it. Docs are out of date here.
 
 ---
 
-## 5. Package scripts & packages
+## 6. Package scripts & packages
 
 ### Scripts (package.json)
 
@@ -146,24 +166,25 @@ carries a `source: {provider, url}` block for attribution.
 | `check:submission`         | ChatGPT developer-mode pre-submission linter               |
 | `prepare`                  | `husky` (installs git hooks on `yarn install`)             |
 
-### Dependencies (runtime, 3)
+### Dependencies (runtime, 2)
 
-`@modelcontextprotocol/sdk` (MCP primitives) · `quran-search-engine` (dataset + inverted index) · `zod` (tool input schemas)
+`@modelcontextprotocol/sdk` (MCP primitives) · `zod` (tool input schemas)
 
 ### DevDependencies
 
 `typescript`, `tsx`, `rimraf`, `@types/node`, `cross-env`, `eslint` + `@eslint/js`, `typescript-eslint`,
 `eslint-plugin-prettier`, `eslint-config-prettier`, `globals`, `prettier`, `husky`, `@commitlint/cli`,
-`@commitlint/config-conventional`, and three **redundant** entries (see §6).
+`@commitlint/config-conventional`, and three **redundant** entries (see §7).
 
 Also: `bin: quranpedia-mcp → dist/server.js` (npm package is runnable via `npx -y quranpedia-mcp`),
 `files: [dist, CHANGELOG.md]`, `type: module`.
 
 ---
 
-## 6. Environment variables — audit (no dead values)
+## 7. Environment variables — audit (no dead values)
 
-All **14 vars documented in `.env.example` are used in code**. Table of what reads what:
+All **14 vars documented in `.env.example` are used in code — unchanged in v2.0.0
+(no new vars added, none removed)**. Table of what reads what:
 
 | Variable                    | Default                 | Read by              | Purpose                 |
 | --------------------------- | ----------------------- | -------------------- | ----------------------- |
@@ -190,12 +211,11 @@ All **14 vars documented in `.env.example` are used in code**. Table of what rea
 - ⚠️ **Redundant devDeps**: `@eslint/eslintrc`, `@typescript-eslint/eslint-plugin`,
   `@typescript-eslint/parser` are declared but **never imported** — the flat config
   uses the `typescript-eslint` meta-package (which bundles plugin+parser). Safe to drop.
-- ⚠️ **Stale docs** referencing deleted `scripts/check-versions.js` + `pretest`.
 - ℹ️ `packageManager: "yarn@1.22.22"` is a Corepack field — ignored by Yarn 1 itself.
 
 ---
 
-## 7. Husky · commitlint · ESLint · Prettier
+## 8. Husky · commitlint · ESLint · Prettier
 
 ### Husky (v9, installed via `prepare: husky`)
 
@@ -230,7 +250,7 @@ All **14 vars documented in `.env.example` are used in code**. Table of what rea
 
 ---
 
-## 8. Yarn 1.22 + `.yarnrc.yml` — should you remove it?
+## 9. Yarn 1.22 + `.yarnrc.yml` — should you remove it?
 
 **Short answer: yes, you can safely remove `.yarnrc.yml` — under Yarn 1.22 it does nothing.**
 
@@ -250,7 +270,7 @@ Bonus: the `packageManager: "yarn@1.22.22"` field is read by **Corepack**, not b
 
 ---
 
-## 9. Docker — multi-stage build, compose, ignore
+## 10. Docker — multi-stage build, compose, ignore
 
 ### `.dockerignore` (why each line)
 
@@ -269,7 +289,7 @@ Stage 1 (build)  node:22-alpine
 Stage 2 (runtime) node:22-alpine
    ENV NODE_ENV=production TRANSPORT=http HOST=0.0.0.0 PORT=4000
    COPY package.json yarn.lock → yarn install --frozen-lockfile --production
-   yarn cache clean + delete quran-search-engine *.map             # slim image
+   yarn cache clean                                              # slim image
    COPY --from=build /app/dist ./dist
    USER node                                                      # unprivileged
    EXPOSE 4000
@@ -295,7 +315,7 @@ deps only** (no TS, eslint, husky…) → smaller, safer runtime image.
 
 ---
 
-## 10. `smithery.yaml` — why it's in the repo
+## 11. `smithery.yaml` — why it's in the repo
 
 **Smithery** (smithery.ai) is a marketplace + hosting platform for MCP servers — the MCP
 equivalent of "one-click install" (similar to Vercel for MCP). This manifest tells Smithery
@@ -320,7 +340,7 @@ configSchema:
 
 ---
 
-## 11. License
+## 12. License
 
 - **MIT License**, `LICENSE` file, **Copyright (c) 2026 adelpro**.
 - Mirrored in `package.json` → `"license": "MIT"` and the README license badge.
@@ -333,7 +353,7 @@ configSchema:
 ## Appendix — interesting facts & quick references
 
 - Public endpoint: **https://mcp.quran.us.kg/** (Cloudflare-fronted, no auth, open CORS).
-  Health: `/health` → `{status, dataLoaded, version, sessions, quranpediaCache}`.
+  Health: `/health` → `{status, version, sessions, quranpediaCache}`.
 - `server.json` is the **MCP registry manifest** (npm stdio package + remote HTTP);
   `mcp.json` is the ready-made **client config** pointing at the public URL.
 - No `.github/workflows` → **no CI pipeline**; quality gates are local (husky lint +
