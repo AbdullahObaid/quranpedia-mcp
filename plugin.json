@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "quranpedia-mcp",
+  "version": "2.0.0",
+  "description": "Explore the Quran through 23 MCP tools backed by the Quranpedia API — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories.",
+  "author": {
+    "name": "quranpedia",
+    "email": "contact@quranpedia.net"
+  },
+  "homepage": "https://github.com/quranpedia/quranpedia-mcp",
+  "repository": "https://github.com/quranpedia/quranpedia-mcp",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "quran",
+    "tafsir",
+    "translation",
+    "mushaf",
+    "ayah",
+    "surah",
+    "quranpedia",
+    "arabic",
+    "claude",
+    "ai"
+  ]
+}

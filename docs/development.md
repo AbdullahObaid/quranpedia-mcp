@@ -365,6 +365,7 @@ quranpedia-mcp/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── server.json                  # MCP registry manifest (npm stdio + remote HTTP)
-├── mcp.json                     # client config pointing at mcp.quranpedia.net
+├── plugin.json                  # Agent Plugins manifest (agent-plugins.org)
+├── mcp.json                     # Agent Plugins MCP config (stdio + Streamable HTTP)
 └── smithery.yaml                # Smithery stdio manifest
 ```

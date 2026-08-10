@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Expired files are pruned and, when the count still exceeds the cap, the
   oldest files are evicted (throttled to once per minute), so a long-running
   server's `QP_CACHE_DIR` can no longer grow unboundedly.
+- Agent Plugins alignment: `plugin.json` + `mcp.json` (spec v1.0.0) make the
+  package a portable [Agent Plugin](https://agent-plugins.org). `mcp.json`
+  declares a `stdio` server (`npx -y quranpedia-mcp`) and a `streamable-http`
+  server (`https://mcp.quranpedia.net/`); both files ship in the npm tarball.
+- `.prettierignore` (`node_modules`, `dist`) so Prettier never formats the
+  committed build output.
 
 ## [2.0.0] - 2026-08-09
 

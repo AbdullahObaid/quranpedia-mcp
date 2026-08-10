@@ -15,6 +15,7 @@ just point it at the URL and it will work.
 - [Cursor](#cursor)
 - [VS Code (GitHub Copilot Chat)](#vs-code)
 - [Other MCP-compatible clients](#other-mcp-compatible-clients)
+- [Agent Plugins](#agent-plugins)
 - [Smithery](#smithery)
 - [Self-hosting with Docker](#self-hosting-with-docker)
 
@@ -191,6 +192,23 @@ will work.
 | **Windsurf**                       | HTTP         | `url: "https://mcp.quranpedia.net/"`                                    |
 | **MCP Inspector**                  | HTTP / stdio | `npx @modelcontextprotocol/inspector --url https://mcp.quranpedia.net/` |
 | **Any MCP client**                 | HTTP         | `url: "https://mcp.quranpedia.net/"`                                    |
+
+---
+
+## Agent Plugins
+
+This repo is also a portable [Agent Plugin](https://agent-plugins.org) (spec v1.0.0): a
+compatible client can load it from a directory and discover the MCP servers
+declared in `mcp.json` — no client-specific wiring needed.
+
+| File | Purpose |
+| --- | --- |
+| `plugin.json` | Agent Plugins manifest: `$schema`, `name`, version, author, license, keywords. |
+| `mcp.json` | Portable MCP config: a `stdio` server (`npx -y quranpedia-mcp`) and a `streamable-http` server (`https://mcp.quranpedia.net/`). |
+
+The `$schema` identifiers in both files target Agent Plugins **1.0.0**. The
+package ships `plugin.json` and `mcp.json` in the npm tarball, so the installed
+`node_modules/quranpedia-mcp` is itself a valid plugin root.
 
 ---
 

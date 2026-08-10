@@ -27,7 +27,9 @@
   },
   "files": [
     "dist",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "plugin.json",
+    "mcp.json"
   ],
   "keywords": [
     "mcp",
