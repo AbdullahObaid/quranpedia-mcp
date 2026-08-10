@@ -1,7 +1,7 @@
 {
   "name": "quranpedia-mcp",
   "version": "2.0.0",
-  "description": "Explore the Quran through 23 MCP tools backed by the Quranpedia API — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quranpedia.net.",
+  "description": "Explore the Quran through 23 MCP tools backed by the Quranpedia API \u2014 mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quranpedia.net.",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
@@ -12,8 +12,8 @@
     "dev": "tsx src/server.ts",
     "dev:http": "cross-env TRANSPORT=http tsx src/server.ts",
     "inspect": "yarn build && npx -y @modelcontextprotocol/inspector --transport stdio -- node dist/server.js",
-    "lint": "eslint src/**/*.{ts,tsx}",
-    "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
     "test": "yarn build && yarn test:stdio && yarn test:http",
     "test:stdio": "node scripts/test.js",
