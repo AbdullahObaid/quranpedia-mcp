@@ -4,6 +4,7 @@ import { registerGetAyahOptions } from './get-ayah-options.js';
 import { registerGetBook } from './get-book.js';
 import { registerGetCategories } from './get-categories.js';
 import { registerGetCategoryItems } from './get-category-items.js';
+import { registerGetChanges } from './get-changes.js';
 import { registerGetFatwa } from './get-fatwa.js';
 import { registerGetMushaf } from './get-mushaf.js';
 import { registerGetMushafAyah } from './get-mushaf-ayah.js';
@@ -33,6 +34,7 @@ export function registerTools(server: McpServer): void {
   registerGetBook(server);
   registerGetCategories(server);
   registerGetCategoryItems(server);
+  registerGetChanges(server);
   registerGetFatwa(server);
   registerGetMushaf(server);
   registerGetMushafAyah(server);

@@ -42,6 +42,7 @@ const REQUIRED_TOOLS = [
   'get_book',
   'get_categories',
   'get_category_items',
+  'get_changes',
   'get_fatwa',
   'get_mushaf',
   'get_mushaf_ayah',
@@ -346,6 +347,24 @@ async function main() {
   }
 
   const sessionId = transport.sessionId;
+  // get_changes — the delta-sync feed, deliberately uncached
+  const changes = await callTool(client, 'get_changes', { since: '2026-08-09' });
+  const changesPayload = parsePayload(changes);
+  assert(typeof changesPayload.since === 'string', 'get_changes should echo the since date');
+  assert(typeof changesPayload.until === 'string', 'get_changes should report an until stamp');
+  assert(
+    changesPayload.changes && typeof changesPayload.changes === 'object',
+    'get_changes should return a changes object keyed by resource type',
+  );
+  assert(
+    typeof changesPayload.source?.url === 'string',
+    'get_changes should carry a quranpedia source block',
+  );
+
+  // Negative: a malformed date fails schema validation before any request
+  const badSince = await callTool(client, 'get_changes', { since: 'last tuesday' });
+  assert(badSince.isError === true, "get_changes('last tuesday') should return isError");
+
   await client.close();
 
   if (sessionId) {

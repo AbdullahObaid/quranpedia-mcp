@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.prettierignore` (`node_modules`, `dist`) so Prettier never formats the
   committed build output.
 
+## [2.2.0]
+
+### Added
+
+- `get_changes` — read Quranpedia's delta-sync feed (`/v1/changes?since=`) so a
+  cached copy can be refreshed instead of going quietly stale. Each row carries
+  a `refetch` path for the resource that changed.
+- `quranpediaRequestFresh()` in `src/quranpedia-client.ts` — a cache-bypassing
+  fetch for endpoints whose value is freshness. `get_changes` uses it; serving
+  that endpoint from the 30-day cache would defeat its purpose.
+
 ## [2.0.0] - 2026-08-09
 
 ### Changed
