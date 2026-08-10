@@ -71,7 +71,7 @@ offline Quran dataset; every tool now talks to `api.quranpedia.net`:
 
 Net surface: **23 read-only tools**, all `openWorldHint: true`, all backed by
 `api.quranpedia.net`. No new environment variables; the existing 14 all still
-apply (§7).
+apply (§8).
 
 ---
 
@@ -164,6 +164,7 @@ carries a `source: {provider, url}` block for attribution.
 | `test`                     | `yarn build && yarn test:stdio && yarn test:http`          |
 | `test:stdio` / `test:http` | E2E against compiled server (spawns MCP client)            |
 | `check:submission`         | ChatGPT developer-mode pre-submission linter               |
+| `inspect`                  | MCP Inspector web UI — browse & call the 23 tools (§7)     |
 | `prepare`                  | `husky` (installs git hooks on `yarn install`)             |
 
 ### Dependencies (runtime, 2)
@@ -174,14 +175,61 @@ carries a `source: {provider, url}` block for attribution.
 
 `typescript`, `tsx`, `rimraf`, `@types/node`, `cross-env`, `eslint` + `@eslint/js`, `typescript-eslint`,
 `eslint-plugin-prettier`, `eslint-config-prettier`, `globals`, `prettier`, `husky`, `@commitlint/cli`,
-`@commitlint/config-conventional`, and three **redundant** entries (see §7).
+`@commitlint/config-conventional`, and three **redundant** entries (see §8).
 
 Also: `bin: quranpedia-mcp → dist/server.js` (npm package is runnable via `npx -y quranpedia-mcp`),
 `files: [dist, CHANGELOG.md]`, `type: module`.
 
 ---
 
-## 7. Environment variables — audit (no dead values)
+## 7. Local dev: MCP Inspector + Claude Desktop
+
+### MCP Inspector — `yarn inspect`
+
+`yarn inspect` compiles `dist/` first (it runs `yarn build`), then launches the
+**MCP Inspector** — an interactive web UI that connects to the local build over
+stdio. You can browse all 23 tools, inspect their input schemas, and call them
+one by one against the live Quranpedia API, no MCP client required:
+
+```bash
+yarn inspect
+# → builds dist/, opens the Inspector in your browser
+#   (tools/list, tools/call, raw JSON-RPC inspection)
+```
+
+The long form is `yarn build && npx -y @modelcontextprotocol/inspector --transport stdio -- node dist/server.js`.
+The Inspector drives `dist/server.js`, so run `yarn build` again after any `src/` change.
+
+### Claude Desktop — local stdio via Settings → Developer → Edit Config
+
+Claude Desktop needs the full path to the compiled server (it does **not**
+resolve relative to the project). To point it at the local `dist/server.js`:
+
+1. Open **Claude Desktop → Settings → Developer → Edit Config**.
+2. Add the server to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "quranpedia-mcp": {
+      "command": "node",
+      "args": ["C:\\path\\to\\quranpedia-mcp\\dist\\server.js"]
+    }
+  }
+}
+```
+
+3. Save the file, **fully quit** Claude Desktop (check the tray/menu bar), and
+   reopen it.
+4. Confirm the tools appear via the hammer icon in the chat input box.
+
+> Windows MSIX caveat: if "Edit Config" edits don't take effect, the app may be
+> reading the virtualized copy under
+> `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\claude_desktop_config.json`.
+
+---
+
+## 8. Environment variables — audit (no dead values)
 
 All **14 vars documented in `.env.example` are used in code — unchanged in v2.0.0
 (no new vars added, none removed)**. Table of what reads what:
@@ -216,7 +264,7 @@ All **14 vars documented in `.env.example` are used in code — unchanged in v2.
 
 ---
 
-## 8. Husky · commitlint · ESLint · Prettier
+## 9. Husky · commitlint · ESLint · Prettier
 
 ### Husky (v9, installed via `prepare: husky`)
 
@@ -251,7 +299,7 @@ All **14 vars documented in `.env.example` are used in code — unchanged in v2.
 
 ---
 
-## 9. Yarn 1.22 + `.yarnrc.yml` — should you remove it?
+## 10. Yarn 1.22 + `.yarnrc.yml` — should you remove it?
 
 **Short answer: yes, you can safely remove `.yarnrc.yml` — under Yarn 1.22 it does nothing.**
 
@@ -271,7 +319,7 @@ Bonus: the `packageManager: "yarn@1.22.22"` field is read by **Corepack**, not b
 
 ---
 
-## 10. Docker — multi-stage build, compose, ignore
+## 11. Docker — multi-stage build, compose, ignore
 
 ### `.dockerignore` (why each line)
 
@@ -316,7 +364,7 @@ deps only** (no TS, eslint, husky…) → smaller, safer runtime image.
 
 ---
 
-## 11. `smithery.yaml` — why it's in the repo
+## 12. `smithery.yaml` — why it's in the repo
 
 **Smithery** (smithery.ai) is a marketplace + hosting platform for MCP servers — the MCP
 equivalent of "one-click install" (similar to Vercel for MCP). This manifest tells Smithery
@@ -341,13 +389,69 @@ configSchema:
 
 ---
 
-## 12. License
+## 13. License
 
 - **MIT License**, `LICENSE` file, **Copyright (c) 2026 quranpedia**.
 - Mirrored in `package.json` → `"license": "MIT"` and the README license badge.
 - Permissive: anyone may use/copy/modify/publish/distribute/sublicense/sell, with the
   copyright + permission notice kept; software provided "AS IS", no warranty,
   no liability for authors/holders.
+
+---
+
+## 14. What's next (roadmap)
+
+### License — settled
+
+- **MIT License** (`LICENSE`, Copyright 2026 Quranpedia), mirrored in
+  `package.json`, `server.json`, and the README badge. No action required.
+
+### Publish to npm (`quranpedia-mcp`)
+
+- Publish the package to the npm registry as **`quranpedia-mcp`** so clients can
+  run `npx -y quranpedia-mcp` over **stdio** instead of pointing an MCP client
+  at a local `dist/server.js`.
+- No rename: the name already matches `package.json`, `bin`, `server.json`,
+  Smithery, and every doc. Verify after publishing with `npm view quranpedia-mcp version`.
+
+### stdio vs Streamable HTTP — deeper look
+
+| | stdio | Streamable HTTP (HTTPS) |
+| --- | --- | --- |
+| Wire | JSON-RPC over stdin/stdout of a child process | JSON-RPC over HTTPS `POST` + SSE stream |
+| Spawn | client starts `node dist/server.js` or `npx -y quranpedia-mcp` | client connects to `https://mcp.quranpedia.net/` |
+| Use case | local dev, desktop apps (Claude Desktop, Cursor, Zed) — no server to run or maintain | remote/hosted, multi-user, browser clients, ChatGPT developer mode — anywhere the server can't be spawned locally |
+| Auth | none (local process) | none (open endpoint, Cloudflare-fronted) |
+| Hardening | trust your own machine | host allow-list, per-IP rate limit, session TTL |
+
+### Contact email
+
+- Replace the `contact@quranpedia.net` placeholder with the real support
+  address in `package.json`, `README.md`, `CONTRIBUTING.md`, and
+  `PRESENTATION.md` (real address TBD).
+
+### Deploy Docker to `mcp.quranpedia.net`
+
+- Run the hardened `Dockerfile` / `docker-compose.yml` on a server behind the
+  `mcp.quranpedia.net` subdomain (Cloudflare-fronted) to serve the **HTTPS
+  Streamable HTTP** protocol publicly.
+- Set `MCP_ALLOWED_HOSTS=mcp.quranpedia.net`; verify with
+  `curl https://mcp.quranpedia.net/health`.
+
+### Publish to Smithery
+
+- List `quranpedia-mcp` on [Smithery](https://smithery.ai) for one-click
+  discoverability. `smithery.yaml` already spawns `npx -y quranpedia-mcp` over
+  stdio, so the listing needs no new wiring.
+
+### Transfer repo option (GitHub)
+
+- The repo currently lives under a personal account
+  (`github.com/adelpro/quranpedia-mcp`), while docs, `server.json`, and
+  `package.json` already point at `github.com/quranpedia/quranpedia-mcp`.
+- **Option:** transfer the repository to the `quranpedia` GitHub organization.
+  GitHub auto-redirects the old URL, and npm/Smithery metadata would then match
+  the org. Decide before the npm publish to avoid churn.
 
 ---
 

@@ -211,7 +211,7 @@ expose it on a different domain), the repo includes a hardened multi-stage
 
 ```bash
 # from the repo root
-docker compose up --build
+docker compose up --build -d
 # → "Quran MCP HTTP server listening on http://0.0.0.0:4000/"
 ```
 
