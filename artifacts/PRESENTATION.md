@@ -1,6 +1,6 @@
 # Quranpedia MCP — Project Presentation
 
-> A slide-style walkthrough of `quranpedia-mcp` v2.0.0 (MIT).
+> A walkthrough of `quranpedia-mcp` v2.0.0 (MIT).
 > An MCP server exposing **23 read-only tools**, all backed by the Quranpedia
 > API (`https://api.quranpedia.net/v1`) — every tool named to mirror the API
 > route it calls. No bundled dataset; network access required for all tools.
@@ -20,72 +20,45 @@ quranpedia-mcp/
 ├── tsconfig.json            # NodeNext, ES2022, strict
 ├── server.json              # MCP registry manifest (npm stdio + remote HTTP)
 ├── plugin.json              # Agent Plugins manifest (agent-plugins.org)
-├── mcp.json                 # Agent Plugins MCP config (stdio + Streamable HTTP)
+├── mcp.json                 # MCP client config → mcp.quranpedia.net; also the Agent Plugins mcp.json
 ├── smithery.yaml            # Smithery.ai deploy/install manifest
 ├── Dockerfile               # 2-stage build
 ├── docker-compose.yml       # Local prod compose (env_file, 256m, healthcheck)
 ├── .env.example             # All 14 documented env vars
-├── .gitignore               # node_modules, dist, .env
-├── .dockerignore            # Slim build context
-├── .prettierrc              # Prettier options
-├── .prettierignore          # Prettier ignores (node_modules, dist)
-├── .yarnrc.yml              # Yarn Berry config — inert under Yarn 1
-├── eslint.config.mjs        # ESLint 9 flat config
-├── commitlint.config.cjs    # Conventional commits
-├── .husky/                  # pre-commit (lint) + commit-msg (commitlint)
-├── .github/                 # Issue templates + PR template (no CI workflows)
-├── assets/                  # Screenshots
-├── dist/                    # Compiled output (committed)
-├── docs/                    # index / tools / integrations / architecture / development
-├── scripts/                 # test.js, test-http.js, check-submission.js
+├── .gitignore                # node_modules, dist, .env
+├── .dockerignore             # Slim build context
+├── .prettierrc               # Prettier options
+├── .yarnrc.yml                # Yarn Berry config — inert under Yarn 1
+├── eslint.config.mjs         # ESLint 9 flat config
+├── commitlint.config.cjs     # Conventional commits
+├── .husky/                   # pre-commit (lint) + commit-msg (commitlint)
+├── .github/                  # Issue templates + PR template (no CI workflows)
+├── assets/                   # Screenshots
+├── dist/                     # Compiled output (committed)
+├── docs/                     # index / tools / integrations / architecture / development
+├── scripts/                  # test.js, test-http.js, check-submission.js
 └── src/
-    ├── server.ts            # Transport resolver (CLI flag → TRANSPORT env → stdio)
-    ├── create-server.ts     # McpServer factory (name + version + registerTools)
-    ├── stdio.ts             # stdio transport
-    ├── http.ts              # Streamable HTTP transport + hardening
-    ├── quranpedia-client.ts # Typed Quranpedia API client + env config
-    ├── quranpedia-cache.ts  # TTL cache: memory + optional disk layer
-    ├── version.ts           # Reads version from package.json
-    └── tools/               # 23 tools, one file each + index.ts + _shared.ts
+    ├── server.ts              # Transport resolver (CLI flag → TRANSPORT env → stdio)
+    ├── create-server.ts       # McpServer factory (name + version + registerTools)
+    ├── stdio.ts                # stdio transport
+    ├── http.ts                 # Streamable HTTP transport + hardening
+    ├── quranpedia-client.ts    # Typed Quranpedia API client + env config
+    ├── quranpedia-cache.ts     # TTL cache: memory + optional disk layer
+    ├── version.ts               # Reads version from package.json
+    └── tools/                   # 23 tools, one file each + index.ts + _shared.ts
 ```
 
 ---
 
-## 2. v2.0.0 breaking change
+## 2. Protocols
 
-v1.0.0 → v2.0.0 is a **breaking** release. The server no longer bundles an
-offline Quran dataset; every tool now talks to `api.quranpedia.net`:
-
-- **8 removed** — the offline dataset-backed tools (full-text search, surahs,
-  verses, ranges, root search, lemma search, morphology) have no Quranpedia
-  equivalent and are gone.
-- **5 renamed** to mirror their API routes:
-
-| Old name                   | New name                      |
-| -------------------------- | ----------------------------- |
-| `get_ayah_content_options` | `get_ayah_options`            |
-| `get_tafsir`               | `get_ayah_book_content`       |
-| `get_translation`          | `get_translation` (unchanged) |
-| `get_surah_background`     | `get_surah_information`       |
-| `search_quranpedia`        | `search`                      |
-
-- **18 added** — mushaf, surah, translation, library, and index tools (§4).
-
-Net surface: **23 read-only tools**, all `openWorldHint: true`, all backed by
-`api.quranpedia.net`. No new environment variables; the existing 14 all still
-apply (§8).
-
----
-
-## 3. Protocols
-
-| Layer            | Protocol / mechanism                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------- |
-| MCP              | **Model Context Protocol** — stdio (local) and **Streamable HTTP** (remote, SSE)      |
-| Wire format      | JSON-RPC 2.0 messages: `initialize`, `tools/list`, `tools/call`, etc.                 |
-| MCP version      | `2024-11-05` (per docs; server advertises latest SDK-compatible)                      |
-| HTTP surface     | `POST/GET/DELETE /` (MCP), `GET /health`, `OPTIONS *` (CORS preflight)                |
-| Tool annotations | Anthropic hints: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` |
+| Layer            | Protocol / mechanism                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| MCP              | **Model Context Protocol** — stdio (local) and **Streamable HTTP** (remote, SSE)                                                      |
+| Wire format      | JSON-RPC 2.0 messages: `initialize`, `tools/list`, `tools/call`, etc.                                                                 |
+| MCP version      | `2024-11-05` per docs — TODO: confirm this matches what the server actually advertises at runtime (SDK may negotiate a newer version) |
+| HTTP surface     | `POST/GET/DELETE /` (MCP), `GET /health`, `OPTIONS *` (CORS preflight)                                                                |
+| Tool annotations | Anthropic hints: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`                                                 |
 
 Transport selection precedence (src/server.ts):
 
@@ -94,6 +67,35 @@ Transport selection precedence (src/server.ts):
 3. Env var `TRANSPORT` (default `stdio`)
 
 Both transports share the same `createServer()` path → identical tool surface.
+
+### Agent Plugins alignment
+
+`quranpedia-mcp` is packaged as a conformant [Agent Plugins](https://agent-plugins.org/)
+package — the emerging vendor-neutral standard (Technical Steering Committee includes
+Amazon, Cursor, Microsoft, OpenAI, and Vercel) for portable AI-agent components:
+
+- `plugin.json` — the required Agent Plugins manifest, identifying the plugin and the
+  spec version it targets.
+- `mcp.json` — doubles as the MCP client config (§1) and the Agent Plugins-format
+  description of the server's stdio/Streamable HTTP transports.
+- No `skills/` directory — this plugin only ships an MCP server, which the spec supports
+  standalone (skills are optional).
+
+Because the package already follows the shared structure, any Agent Plugins-compatible
+client can discover and load `quranpedia-mcp` without client-specific adaptation, on top
+of the existing MCP registry (`server.json`) and Smithery (`smithery.yaml`) listings.
+
+---
+
+## 3. stdio vs Streamable HTTP — deeper look
+
+|           | stdio                                                                                | Streamable HTTP (HTTPS)                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Wire      | JSON-RPC over stdin/stdout of a child process                                        | JSON-RPC over HTTPS `POST` + SSE stream                                                                                                                                                     |
+| Spawn     | client starts `node dist/server.js` or `npx -y quranpedia-mcp`                       | client connects to `https://mcp.quranpedia.net/`                                                                                                                                            |
+| Use case  | local dev, desktop apps (Claude Desktop, Cursor, Zed) — no server to run or maintain | remote/hosted, multi-user, browser clients, ChatGPT developer mode — anywhere the server can't be spawned locally                                                                           |
+| Auth      | none (local process)                                                                 | none — open endpoint, Cloudflare-fronted; acceptable here since all 23 tools are read-only against a public API, but worth stating explicitly rather than leaving as an implicit assumption |
+| Hardening | trust your own machine                                                               | host allow-list, per-IP rate limit, session TTL                                                                                                                                             |
 
 ---
 
@@ -177,7 +179,7 @@ carries a `source: {provider, url}` block for attribution.
 
 `typescript`, `tsx`, `rimraf`, `@types/node`, `cross-env`, `eslint` + `@eslint/js`, `typescript-eslint`,
 `eslint-plugin-prettier`, `eslint-config-prettier`, `globals`, `prettier`, `husky`, `@commitlint/cli`,
-`@commitlint/config-conventional`, and three **redundant** entries (see §8).
+`@commitlint/config-conventional`.
 
 Also: `bin: quranpedia-mcp → dist/server.js` (npm package is runnable via `npx -y quranpedia-mcp`),
 `files: [dist, CHANGELOG.md]`, `type: module`.
@@ -231,7 +233,7 @@ resolve relative to the project). To point it at the local `dist/server.js`:
 
 ---
 
-## 8. Environment variables — audit (no dead values)
+## 8. Environment variables
 
 All **14 vars documented in `.env.example` are used in code — unchanged in v2.0.0
 (no new vars added, none removed)**. Table of what reads what:
@@ -253,16 +255,6 @@ All **14 vars documented in `.env.example` are used in code — unchanged in v2.
 | `QP_CACHE_DIR`              | unset (memory only)     | quranpedia-client.ts | Optional disk cache dir               |
 | `QP_CACHE_MAX_ENTRIES`      | `5000`                  | quranpedia-client.ts | In-memory cap                         |
 | `QP_CACHE_MAX_DISK_ENTRIES` | `5000`                  | quranpedia-client.ts | On-disk cap (prunes expired + oldest) |
-
-### Findings (dead / stale values)
-
-- ✅ **No unused env vars.** Every `.env.example` value maps to a live read.
-- ⚠️ **`main: "index.js"`** in package.json → **no such file exists** (entry is
-  `dist/server.js` via `bin`). Inert for an MCP server, but the field is stale/misleading.
-- ⚠️ **Redundant devDeps**: `@eslint/eslintrc`, `@typescript-eslint/eslint-plugin`,
-  `@typescript-eslint/parser` are declared but **never imported** — the flat config
-  uses the `typescript-eslint` meta-package (which bundles plugin+parser). Safe to drop.
-- ℹ️ `packageManager: "yarn@1.22.22"` is a Corepack field — ignored by Yarn 1 itself.
 
 ---
 
@@ -294,9 +286,7 @@ All **14 vars documented in `.env.example` are used in code — unchanged in v2.
 
 ### Ignores
 
-- `.prettierignore`: `node_modules`, `dist` — `dist/` is committed build output, so
-  Prettier never touches it; the `format` script stays scoped to `src/**` anyway.
-- No `.eslintignore` (flat config uses the `ignores` key).
+- No `.eslintignore` (flat config uses the `ignores` key, which is scoped to `src/**` anyway).
 - `.gitignore`: `node_modules`, `dist`, `.env`.
 
 ---
@@ -335,14 +325,9 @@ deps only** (no TS, eslint, husky…) → smaller, safer runtime image.
 
 - `build: .` + `container_name: quranpedia-mcp`, `restart: unless-stopped`
 - `env_file: .env` (PORT/HOST/all MCP*\*/QP*\* come from the host `.env`)
-- Ports: `127.0.0.1:${PORT:-9000}:${PORT:-9000}` — **bound to loopback only** (not public)
+- Ports: `127.0.0.1:${PORT:-4000}:${PORT:-4000}` — **bound to loopback only** (not public)
 - `mem_limit: 256m`
-- Mirrored healthcheck using the same `${PORT:-9000}` interpolation
-
-> ⚠️ **Gotcha:** compose defaults to port **9000**, but the Dockerfile `ENV PORT=4000`.
-> With a `.env` copied from `.env.example` (`PORT=4000`) everything lines up; but running
-> compose **without** a `.env` leaves the container on 4000 while compose maps + healthchecks
-> 9000 → healthcheck fails. Keep `PORT` consistent in `.env`.
+- Mirrored healthcheck using the same `${PORT:-4000}` interpolation
 
 ---
 
@@ -371,7 +356,11 @@ configSchema:
 
 ---
 
-## 12. License
+## 12. What's next (roadmap)
+
+### License — keep MIT or change?
+
+Current state:
 
 - **MIT License**, `LICENSE` file, **Copyright (c) 2026 quranpedia**.
 - Mirrored in `package.json` → `"license": "MIT"` and the README license badge.
@@ -379,39 +368,34 @@ configSchema:
   copyright + permission notice kept; software provided "AS IS", no warranty,
   no liability for authors/holders.
 
----
+Worth deciding deliberately rather than by default, since this is a wrapper around
+the Quranpedia API surface and Islamic content is being exposed through it:
 
-## 14. What's next (roadmap)
-
-### License
-
-discuss the llicense change or keep mit
-
-### Change or vlidea the name
-
-quranpedia-mcp
+- **Keep MIT** — maximizes adoption and reuse; matches the rest of the MCP/npm
+  ecosystem (most comparable MCP servers ship MIT or Apache-2.0), so it's the
+  path of least friction for anyone wiring this into their own client or fork.
+- **Consider a more restrictive license** (e.g. Apache-2.0 with patent grant,
+  or a source-available/non-commercial variant) if there's a concern about
+  downstream commercial use of Quranpedia-sourced content without attribution,
+  or about forks being republished without the `source` attribution block the
+  API already returns (§4).
+- No action is being taken here — this is flagged as a decision point, not a
+  problem. If MIT stays, no changes needed anywhere (license file, badges, and
+  `package.json` already agree).
 
 ### Publish to npm (`quranpedia-mcp`)
 
 - Publish the package to the npm registry as **`quranpedia-mcp`** so clients can
   run `npx -y quranpedia-mcp` over **stdio** instead of pointing an MCP client
   at a local `dist/server.js`.
-
-### stdio vs Streamable HTTP — deeper look
-
-|           | stdio                                                                                | Streamable HTTP (HTTPS)                                                                                           |
-| --------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Wire      | JSON-RPC over stdin/stdout of a child process                                        | JSON-RPC over HTTPS `POST` + SSE stream                                                                           |
-| Spawn     | client starts `node dist/server.js` or `npx -y quranpedia-mcp`                       | client connects to `https://mcp.quranpedia.net/`                                                                  |
-| Use case  | local dev, desktop apps (Claude Desktop, Cursor, Zed) — no server to run or maintain | remote/hosted, multi-user, browser clients, ChatGPT developer mode — anywhere the server can't be spawned locally |
-| Auth      | none (local process)                                                                 | none (open endpoint, Cloudflare-fronted)                                                                          |
-| Hardening | trust your own machine                                                               | host allow-list, per-IP rate limit, session TTL                                                                   |
+- No rename needed: the name already matches `package.json`, `bin`, `server.json`,
+  Smithery, and every doc. Verify after publishing with `npm view quranpedia-mcp version`.
 
 ### Contact email
 
 - Replace the `contact@quranpedia.net` placeholder with the real support
   address in `package.json`, `README.md`, `CONTRIBUTING.md`, and
-  `artifacts/PRESENTATION.md` (real address TBD).
+  `PRESENTATION.md` (real address TBD).
 
 ### Deploy Docker to `mcp.quranpedia.net`
 
@@ -427,27 +411,14 @@ quranpedia-mcp
   discoverability. `smithery.yaml` already spawns `npx -y quranpedia-mcp` over
   stdio, so the listing needs no new wiring.
 
-### Transfer repo option (GitHub)
+### Transfer repo to `quranpedia` org
 
-- The repo currently lives under a personal account
-  (`github.com/adelpro/quranpedia-mcp`), while docs, `server.json`, and
-  `package.json` already point at `github.com/quranpedia/quranpedia-mcp`.
-- **Option:** transfer the repository to the `quranpedia` GitHub organization.
-  GitHub auto-redirects the old URL, and npm/Smithery metadata would then match
-  the org. Decide before the npm publish to avoid churn.
-
----
-
-## Appendix — interesting facts & quick references
-
-- Public endpoint: **https://mcp.quranpedia.net/** (Cloudflare-fronted, no auth, open CORS).
-  Health: `/health` → `{status, version, sessions, quranpediaCache}`.
-- `server.json` is the **MCP registry manifest** (npm stdio package + remote HTTP);
-  `mcp.json` is the ready-made **client config** pointing at the public URL.
-- No `.github/workflows` → **no CI pipeline**; quality gates are local (husky lint +
-  commitlint, `yarn test`, `yarn check:submission`).
-- `scripts/check-submission.js` lints the live endpoint + tool list against the ChatGPT
-  developer-mode submission rules (HTTPS 200, descriptions ≤ 299 chars, no
-  MUST/ALWAYS/NEVER/REQUIRED/SHALL, all 4 annotations present).
-- `dist/` is committed → `npx quranpedia-mcp` and Smithery work straight from npm
-  without a build step.
+- **Action:** transfer the repository from the personal account
+  (`github.com/adelpro/quranpedia-mcp`) to the `quranpedia` GitHub organization
+  (`github.com/quranpedia/quranpedia-mcp`). Docs, `server.json`, and `package.json`
+  already reference the `quranpedia` org URL, so this brings the actual repo location
+  in line with what's already published — right now it's a mismatch.
+- GitHub auto-redirects the old URL after transfer, so existing clones and links
+  keep working, and npm/Smithery metadata will then match the org.
+- **Do this before the npm publish** to avoid churn — published package metadata is
+  harder to correct after the fact.

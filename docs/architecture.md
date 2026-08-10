@@ -74,25 +74,25 @@ the advertised tool surface is identical regardless of transport.
 
 Every request flows through `src/quranpedia-cache.ts` (`getOrSet`):
 
-| Layer | When used | Notes |
-| --- | --- | --- |
-| In-memory `Map` | always | Shared across HTTP sessions; capped at `QP_CACHE_MAX_ENTRIES` (oldest evicted first). |
-| On-disk (`QP_CACHE_DIR`) | when set | SHA-1-keyed JSON files that survive restarts, so a long-running server keeps serving cached ayahs even if the upstream is down. Point it at a mounted volume (e.g. rclone/FUSE Garage S3) for durable caching. Bounded: expired entries are pruned and, when the file count exceeds `QP_CACHE_MAX_DISK_ENTRIES`, the oldest files are evicted (throttled to once per minute). |
+| Layer                    | When used | Notes                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| In-memory `Map`          | always    | Shared across HTTP sessions; capped at `QP_CACHE_MAX_ENTRIES` (oldest evicted first).                                                                                                                                                                                                                                                                                         |
+| On-disk (`QP_CACHE_DIR`) | when set  | SHA-1-keyed JSON files that survive restarts, so a long-running server keeps serving cached ayahs even if the upstream is down. Point it at a mounted volume (e.g. rclone/FUSE Garage S3) for durable caching. Bounded: expired entries are pruned and, when the file count exceeds `QP_CACHE_MAX_DISK_ENTRIES`, the oldest files are evicted (throttled to once per minute). |
 
 Concurrent callers with the same key share one in-flight fetch (a `pending`
 map), so popular ayahs never hammer the upstream in parallel.
 
 ### Quranpedia environment variables
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `QP_BASE_URL` | `https://api.quranpedia.net/v1` | Upstream base URL. |
-| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1` | Book used by `get_ayah_book_content` when `book_id` is omitted (تيسير التفسير). |
-| `QP_FETCH_TIMEOUT_MS` | `30000` | Per-request upstream timeout. |
-| `QP_CACHE_TTL_MS` | `2592000000` (30 d) | Cache entry lifetime; Quranic text is static. |
-| `QP_CACHE_DIR` | _(unset)_ | Optional persistent cache directory. |
-| `QP_CACHE_MAX_ENTRIES` | `5000` | In-memory cache cap. |
-| `QP_CACHE_MAX_DISK_ENTRIES` | `5000` | On-disk cache cap (expired + oldest entries pruned on writes). |
+| Variable                    | Default                         | Purpose                                                                         |
+| --------------------------- | ------------------------------- | ------------------------------------------------------------------------------- |
+| `QP_BASE_URL`               | `https://api.quranpedia.net/v1` | Upstream base URL.                                                              |
+| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1`                             | Book used by `get_ayah_book_content` when `book_id` is omitted (تيسير التفسير). |
+| `QP_FETCH_TIMEOUT_MS`       | `30000`                         | Per-request upstream timeout.                                                   |
+| `QP_CACHE_TTL_MS`           | `2592000000` (30 d)             | Cache entry lifetime; Quranic text is static.                                   |
+| `QP_CACHE_DIR`              | _(unset)_                       | Optional persistent cache directory.                                            |
+| `QP_CACHE_MAX_ENTRIES`      | `5000`                          | In-memory cache cap.                                                            |
+| `QP_CACHE_MAX_DISK_ENTRIES` | `5000`                          | On-disk cache cap (expired + oldest entries pruned on writes).                  |
 
 `/health` reports `quranpediaCache: { memoryEntries, diskEntries, hits, misses }`
 alongside the existing `status` / `version` / `sessions` fields.
@@ -106,24 +106,24 @@ session id. Sessions are tracked in a `Map<sessionId, Session>`.
 
 ### Endpoints
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | `/` | Initialize new sessions and send JSON-RPC requests |
-| `GET` | `/` | Server-sent events for streaming responses |
-| `DELETE` | `/` | Close a session |
-| `GET` | `/health` | `{"status":"ok","version":"…","sessions":N,"quranpediaCache":{…}}` |
-| `OPTIONS` | `*` | CORS preflight |
+| Method    | Path      | Purpose                                                            |
+| --------- | --------- | ------------------------------------------------------------------ |
+| `POST`    | `/`       | Initialize new sessions and send JSON-RPC requests                 |
+| `GET`     | `/`       | Server-sent events for streaming responses                         |
+| `DELETE`  | `/`       | Close a session                                                    |
+| `GET`     | `/health` | `{"status":"ok","version":"…","sessions":N,"quranpediaCache":{…}}` |
+| `OPTIONS` | `*`       | CORS preflight                                                     |
 
 ### Hardening
 
-| Control | Variable | Default | Notes |
-| --- | --- | --- | --- |
-| Host allow-list | `MCP_ALLOWED_HOSTS` | _(unset)_ | Comma-separated `Host` header values. Unset = allow all. |
-| Request body cap | `MCP_MAX_BODY_BYTES` | `1048576` | 1 MiB. |
-| Per-IP rate limit | `MCP_RATE_LIMIT_PER_MINUTE` | `60` | Token bucket, 60-second window. |
-| Session TTL | `MCP_SESSION_TTL_MS` | `300000` | 5 minutes. Reaper runs every 60 s. |
-| Max sessions | `MCP_MAX_SESSIONS` | `500` | Returns 503 when exceeded. |
-| CORS | _baked in_ | `*` | Open CORS for browser-based clients. |
+| Control           | Variable                    | Default   | Notes                                                    |
+| ----------------- | --------------------------- | --------- | -------------------------------------------------------- |
+| Host allow-list   | `MCP_ALLOWED_HOSTS`         | _(unset)_ | Comma-separated `Host` header values. Unset = allow all. |
+| Request body cap  | `MCP_MAX_BODY_BYTES`        | `1048576` | 1 MiB.                                                   |
+| Per-IP rate limit | `MCP_RATE_LIMIT_PER_MINUTE` | `60`      | Token bucket, 60-second window.                          |
+| Session TTL       | `MCP_SESSION_TTL_MS`        | `300000`  | 5 minutes. Reaper runs every 60 s.                       |
+| Max sessions      | `MCP_MAX_SESSIONS`          | `500`     | Returns 503 when exceeded.                               |
+| CORS              | _baked in_                  | `*`       | Open CORS for browser-based clients.                     |
 
 `uncaughtException` and `unhandledRejection` are logged to stderr but not
 crashing the process. Graceful shutdown on `SIGTERM` / `SIGINT` with a 10-second
@@ -149,7 +149,7 @@ Default env: `TRANSPORT=http HOST=0.0.0.0 PORT=4000`. A `HEALTHCHECK` hits
 `http://127.0.0.1:${PORT}/health` every 30 seconds (15 s start period,
 3 retries).
 
-`docker-compose.yml` adds a `mem_limit: 256m`, binds `127.0.0.1:${PORT:-9000}:${PORT:-9000}`,
+`docker-compose.yml` adds a `mem_limit: 256m`, binds `127.0.0.1:${PORT:-4000}:${PORT:-4000}`,
 and reads the same env file (typically `.env`).
 
 ## Cloudflare proxy
