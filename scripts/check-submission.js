@@ -15,7 +15,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 
-const ENDPOINT = 'https://mcp.quran.us.kg';
+const ENDPOINT = 'https://mcp.quranpedia.net';
 const PUBLIC_HEALTH_URL = `${ENDPOINT}/health`;
 const FORBIDDEN_WORDS = ['MUST', 'ALWAYS', 'NEVER', 'MUST NOT', 'REQUIRED', 'SHALL'];
 const MAX_DESCRIPTION_LENGTH = 299;

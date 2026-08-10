@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readdirSync } from 'node:fs';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 /**
@@ -23,6 +23,8 @@ export interface QuranpediaCacheOptions {
   ttlMs: number;
   directory?: string;
   maxEntries: number;
+  /** Max JSON files kept on disk; expired + oldest entries are pruned on writes (throttled). */
+  maxDiskEntries?: number;
 }
 
 export interface QuranpediaCacheStats {
@@ -45,11 +47,15 @@ export class QuranpediaCache {
   private readonly ttlMs: number;
   private readonly directory?: string;
   private readonly maxEntries: number;
+  private readonly maxDiskEntries: number;
+  private lastDiskTrim = 0;
+  private static readonly DISK_TRIM_INTERVAL_MS = 60_000;
 
   constructor(options: QuranpediaCacheOptions) {
     this.ttlMs = options.ttlMs;
     this.directory = options.directory;
     this.maxEntries = options.maxEntries;
+    this.maxDiskEntries = options.maxDiskEntries ?? 5000;
   }
 
   private keyFile(key: string): string {
@@ -98,9 +104,52 @@ export class QuranpediaCache {
         const tmp = `${target}.tmp`;
         await writeFile(tmp, JSON.stringify({ expiresAt, value }), 'utf8');
         await rename(tmp, target);
+        await this.trimDisk();
       } catch {
         // disk persistence is best-effort; never fail a request over it
       }
+    }
+  }
+
+  /**
+   * Bounded on-disk cache: expired entries (mtime + TTL < now) are removed, and
+   * if the file count still exceeds `maxDiskEntries`, the oldest files are
+   * evicted. Throttled to one pass per minute so large directories are not
+   * scanned on every write. Runs synchronously after each disk write.
+   */
+  private async trimDisk(): Promise<void> {
+    if (!this.directory) return;
+    const now = Date.now();
+    if (now - this.lastDiskTrim < QuranpediaCache.DISK_TRIM_INTERVAL_MS) return;
+    this.lastDiskTrim = now;
+    try {
+      const names = await readdir(this.directory);
+      const expiredAt = now - this.ttlMs;
+      const alive: Array<{ name: string; mtimeMs: number }> = [];
+      for (const name of names) {
+        if (!name.endsWith('.json')) continue;
+        const file = path.join(this.directory, name);
+        let mtimeMs = 0;
+        try {
+          mtimeMs = (await stat(file)).mtimeMs;
+        } catch {
+          continue;
+        }
+        if (mtimeMs < expiredAt) {
+          await unlink(file).catch(() => {});
+        } else {
+          alive.push({ name, mtimeMs });
+        }
+      }
+      if (alive.length > this.maxDiskEntries) {
+        const overflow = alive.length - this.maxDiskEntries;
+        alive.sort((a, b) => a.mtimeMs - b.mtimeMs);
+        for (const { name } of alive.slice(0, overflow)) {
+          await unlink(path.join(this.directory, name)).catch(() => {});
+        }
+      }
+    } catch {
+      // best-effort
     }
   }
 

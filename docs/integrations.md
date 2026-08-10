@@ -1,6 +1,6 @@
 # Integrations
 
-The public MCP server at **<https://mcp.quran.us.kg/>** works with any MCP-compatible
+The public MCP server at **<https://mcp.quranpedia.net/>** works with any MCP-compatible
 client — Claude, ChatGPT, Cursor, VS Code, and others. Each section below shows a
 copy-pasteable config snippet for that client.
 
@@ -24,11 +24,11 @@ just point it at the URL and it will work.
 
 Claude Desktop supports both transports. Edit the config file at:
 
-| OS | Path |
-| --- | --- |
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Linux | `~/.config/Claude/claude_desktop_config.json` |
+| OS      | Path                                                              |
+| ------- | ----------------------------------------------------------------- |
+| macOS   | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json`                     |
+| Linux   | `~/.config/Claude/claude_desktop_config.json`                     |
 
 ### Option A — public HTTPS (recommended, no install)
 
@@ -36,13 +36,13 @@ Claude Desktop supports both transports. Edit the config file at:
 {
   "mcpServers": {
     "quran": {
-      "url": "https://mcp.quran.us.kg/"
+      "url": "https://mcp.quranpedia.net/"
     }
   }
 }
 ```
 
-The MCP server is hosted at `https://mcp.quran.us.kg/`. Restart Claude Desktop
+The MCP server is hosted at `https://mcp.quranpedia.net/`. Restart Claude Desktop
 after editing the config and the tools will appear in the tool picker.
 
 ### Option B — local stdio
@@ -69,7 +69,7 @@ Quranpedia API over the network, so `api.quranpedia.net` must be reachable.
 plans.
 
 1. Open **Settings → Connectors → Add custom connector**.
-2. Enter the URL: `https://mcp.quran.us.kg/`.
+2. Enter the URL: `https://mcp.quranpedia.net/`.
 3. Save. The connector appears as **Quranpedia MCP** in the tool picker.
 4. The server requires no API key — CORS is open and the endpoint is public.
 
@@ -83,7 +83,7 @@ If your plan does not show the "Add custom connector" option, use Claude Desktop
 ChatGPT's developer mode supports MCP servers. The submission checklist has four
 hard requirements; all of them are satisfied by this server:
 
-1. **Public HTTPS URL** — `https://mcp.quran.us.kg/`.
+1. **Public HTTPS URL** — `https://mcp.quranpedia.net/`.
 2. **Tool descriptions under 300 characters** — every tool's `description` is concise
    and free of system-prompt directive words. See [tools.md](tools.md) for the
    exact strings.
@@ -102,13 +102,13 @@ yarn build
 yarn check:submission
 ```
 
-The script fetches `https://mcp.quran.us.kg/health`, lists all tools, and
+The script fetches `https://mcp.quranpedia.net/health`, lists all tools, and
 verifies every description length, forbidden word, and annotation.
 
 ### Submit
 
 1. Open the ChatGPT developer submission form.
-2. Provide the public URL: `https://mcp.quran.us.kg/`.
+2. Provide the public URL: `https://mcp.quranpedia.net/`.
 3. Upload the `server.json` manifest from this repo.
 4. Approve the listed tools.
 
@@ -123,7 +123,7 @@ the project).
 {
   "mcpServers": {
     "quran": {
-      "url": "https://mcp.quran.us.kg/"
+      "url": "https://mcp.quranpedia.net/"
     }
   }
 }
@@ -154,7 +154,7 @@ the workspace, or from `settings.json` for user-wide.
   "servers": {
     "quran": {
       "type": "http",
-      "url": "https://mcp.quran.us.kg/"
+      "url": "https://mcp.quranpedia.net/"
     }
   }
 }
@@ -182,22 +182,22 @@ The server follows the standard MCP wire protocol (`2024-11-05`) over either
 stdio or Streamable HTTP. Any client that supports one of those transports
 will work.
 
-| Client | Transport | Config |
-| --- | --- | --- |
-| **Cline** (VS Code) | stdio | `command: "npx"`, `args: ["-y", "quranpedia-mcp"]` |
-| **Continue** (VS Code / JetBrains) | stdio | same as Cline |
-| **Roo Code** | stdio | same as Cline |
-| **Zed** | stdio | `npx -y quranpedia-mcp` |
-| **Windsurf** | HTTP | `url: "https://mcp.quran.us.kg/"` |
-| **MCP Inspector** | HTTP / stdio | `npx @modelcontextprotocol/inspector --url https://mcp.quran.us.kg/` |
-| **Any MCP client** | HTTP | `url: "https://mcp.quran.us.kg/"` |
+| Client                             | Transport    | Config                                                                  |
+| ---------------------------------- | ------------ | ----------------------------------------------------------------------- |
+| **Cline** (VS Code)                | stdio        | `command: "npx"`, `args: ["-y", "quranpedia-mcp"]`                      |
+| **Continue** (VS Code / JetBrains) | stdio        | same as Cline                                                           |
+| **Roo Code**                       | stdio        | same as Cline                                                           |
+| **Zed**                            | stdio        | `npx -y quranpedia-mcp`                                                 |
+| **Windsurf**                       | HTTP         | `url: "https://mcp.quranpedia.net/"`                                    |
+| **MCP Inspector**                  | HTTP / stdio | `npx @modelcontextprotocol/inspector --url https://mcp.quranpedia.net/` |
+| **Any MCP client**                 | HTTP         | `url: "https://mcp.quranpedia.net/"`                                    |
 
 ---
 
 ## Smithery
 
 This server is published on Smithery as
-`io.github.adelpro/quranpedia-mcp`. Smithery's hosted runner uses the
+`io.github.quranpedia/quranpedia-mcp`. Smithery's hosted runner uses the
 stdio transport; the public URL there is automatically wired to this same
 package.
 

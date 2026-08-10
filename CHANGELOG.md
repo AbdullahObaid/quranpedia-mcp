@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `QP_CACHE_MAX_DISK_ENTRIES` (default `5000`): caps the on-disk cache layer.
+  Expired files are pruned and, when the count still exceeds the cap, the
+  oldest files are evicted (throttled to once per minute), so a long-running
+  server's `QP_CACHE_DIR` can no longer grow unboundedly.
+
 ## [2.0.0] - 2026-08-09
 
 ### Changed
@@ -15,12 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `get_tafsir` → `get_ayah_book_content`,
   `get_surah_background` → `get_surah_information`,
   `search_quranpedia` → `search`.
-
-### Removed
-
-- `quran-search-engine` dependency, the offline dataset loader, and the 8
-  dataset-backed tools. All tools now require network access to
-  `api.quranpedia.net`.
 
 ### Added
 
@@ -51,15 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `null` — not an error.
 - `GET /health` now reports `quranpediaCache: { memoryEntries, diskEntries, hits, misses }`.
 - `server.json` `remotes` entry and `mcp.json` documenting the public
-  Streamable HTTP endpoint `https://mcp.quran.us.kg/`; `.env.example` documents
+  Streamable HTTP endpoint `https://mcp.quranpedia.net/`; `.env.example` documents
   the `QP_*` variables.
 
 ### Changed
 
-- Server renamed from `quran-search-engine-mcp` to **`quranpedia-mcp`**
-  (package name, `McpServer` name, npm bin `quranpedia-mcp`, `server.json`,
+- (package name, `McpServer` name, npm bin `quranpedia-mcp`, `server.json`,
   `smithery.yaml`). Repository moved to
-  <https://github.com/adelpro/quranpedia-mcp>.
+  <https://github.com/quranpedia/quranpedia-mcp>.
 - Version bumped to `1.0.0` (check-versions parity across `package.json` and
   `server.json` maintained).
 - `scripts/test.js` and `scripts/test-http.js` now assert all 13 tools and the
@@ -67,6 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the Quranpedia tools against the live API (happy paths + missing-resource
   nulls + schema validation errors).
 - `scripts/check-submission.js` annotation check now expects `openWorldHint:
-  true` for the Quranpedia tools.
+true` for the Quranpedia tools.
 - Docs (`README.md`, `docs/*`) updated for the 13-tool surface, the Quranpedia
   client/cache architecture, and the `QP_*` environment variables.

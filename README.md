@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/quranpedia-mcp.svg)](https://www.npmjs.com/package/quranpedia-mcp)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?style=flat&logo=github)](https://github.com/modelcontextprotocol/servers)
-[![smithery badge](https://smithery.ai/badge/adelpro/quranpedia-mcp)](https://smithery.ai/servers/adelpro/quranpedia-mcp)
+[![smithery badge](https://smithery.ai/badge/quranpedia/quranpedia-mcp)](https://smithery.ai/servers/quranpedia/quranpedia-mcp)
 [![license](https://img.shields.io/npm/l/quranpedia-mcp.svg)](LICENSE)
 
 An MCP (Model Context Protocol) server that gives AI clients fast, accurate,
@@ -10,7 +10,7 @@ hallucination-free access to the Quran — **mushafs, ayahs, surahs, tafsir,
 translations, books, fatwas, notes, topics, reciters, and categories** — over
 **stdio** and **Streamable HTTP**.
 
-> Explore the Quran through 23 MCP tools — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quran.us.kg.
+> Explore the Quran through 23 MCP tools — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quranpedia.net.
 > Instead of relying on an AI to "hallucinate" or predict Quranic content, this
 > tool routes every request to the Quranpedia API
 > (https://api.quranpedia.net/v1). The AI handles the natural language; the
@@ -19,15 +19,14 @@ translations, books, fatwas, notes, topics, reciters, and categories** — over
 
 ## Public endpoint
 
-The server is publicly hosted at **<https://mcp.quran.us.kg/>**
+The server is publicly hosted at **<https://mcp.quranpedia.net/>**
 (Cloudflare-fronted, stable). No API key, no auth — the endpoint is open and
 CORS-enabled for any client.
 
-| Resource | URL |
-| --- | --- |
-| MCP server (Streamable HTTP) | `https://mcp.quran.us.kg/` |
-| Health check | `https://mcp.quran.us.kg/health` |
-| Status page | `https://quran.us.kg` |
+| Resource                     | URL                                 |
+| ---------------------------- | ----------------------------------- |
+| MCP server (Streamable HTTP) | `https://mcp.quranpedia.net/`       |
+| Health check                 | `https://mcp.quranpedia.net/health` |
 
 ## Features
 
@@ -42,7 +41,7 @@ CORS-enabled for any client.
 
 ```bash
 # Use the public endpoint
-# → point your MCP client at https://mcp.quran.us.kg/
+# → point your MCP client at https://mcp.quranpedia.net/
 
 # Or run the server locally (stdio)
 npx -y quranpedia-mcp
@@ -59,7 +58,7 @@ Detailed docs live under [`docs/`](docs/index.md):
 
 ## Quick start (HTTP)
 
-The shortest path: use any MCP client and point it at `https://mcp.quran.us.kg/`.
+The shortest path: use any MCP client and point it at `https://mcp.quranpedia.net/`.
 For ad-hoc testing, the [integrations page](docs/integrations.md#other-mcp-compatible-clients)
 shows a one-off Node snippet that uses `@modelcontextprotocol/sdk` directly.
 
@@ -82,4 +81,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Contact
 
-Email: <contact@adelpro.us.kg>
+Email: <contact@quranpedia.net>

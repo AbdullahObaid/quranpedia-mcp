@@ -39,7 +39,7 @@ rest.
 > **TODO:** a dedicated `SECURITY.md` will replace this section.
 
 If you discover a security vulnerability, **do not open a public issue**.
-Email [`contact@quranpedia.net`](mailto:contact@adelpro.us.kg) privately with
+Email [`contact@quranpedia.net`](mailto:contact@quranpedia.net) privately with
 details and a reproducer. You should receive an acknowledgement within a few
 days.
 
@@ -66,7 +66,7 @@ This repo uses a lightweight GitFlow:
 
 | Branch    | Purpose                                                              |
 | --------- | -------------------------------------------------------------------- |
-| `main`    | Released code; deploys to `https://mcp.quran.us.kg/`.                |
+| `main`    | Released code; deploys to `https://mcp.quranpedia.net/`.             |
 | `staging` | Pre-release integration.                                             |
 | `develop` | **Default base branch for new contributions.** PRs target `develop`. |
 
@@ -202,4 +202,4 @@ you agree that your contributions will be licensed under the same MIT terms.
 ---
 
 Questions, or not sure where to start? Open an issue or email
-[`contact@adelpro.us.kg`](mailto:contact@adelpro.us.kg).
+[`contact@quranpedia.net`](mailto:contact@quranpedia.net).

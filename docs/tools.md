@@ -63,6 +63,7 @@ content for the ayah, returns the tafsir books available for that surah.
 | Field | Value |
 | --- | --- |
 | API route | `GET /ayah/{surah_id}/{ayah_number}/book/{book_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#ayahs) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -115,6 +116,7 @@ meanings, topics, fatwa, e3rab, notes, asbab, translations.
 | Field | Value |
 | --- | --- |
 | API route | `GET /ayah/{surah_id}/{ayah_number}/options` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#ayahs) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -159,6 +161,7 @@ edition, publisher, and contents URL.
 | Field | Value |
 | --- | --- |
 | API route | `GET /book/{book_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#books) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -193,6 +196,7 @@ to include counts.
 | Field | Value |
 | --- | --- |
 | API route | `GET /categories/{type?}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#categories) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -226,6 +230,7 @@ Get books, fatwas, or notes within a specific category.
 | Field | Value |
 | --- | --- |
 | API route | `GET /category/{category_id}/{type}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#categories) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -259,6 +264,7 @@ A single fatwa with question, answer, mufti, source URL, and category.
 | Field | Value |
 | --- | --- |
 | API route | `GET /fatwa/{fatwa_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#fatwas) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -291,6 +297,7 @@ Get a single mushaf with all its surahs and ayahs. Response is large — prefer
 | Field | Value |
 | --- | --- |
 | API route | `GET /mushafs/{id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#mushafs) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -322,6 +329,7 @@ Get a single ayah text from a mushaf by mushaf id, surah id, and ayah number.
 | Field | Value |
 | --- | --- |
 | API route | `GET /mushafs/{mushaf_id}/{surah_id}/{ayah_number}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#ayahs) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -357,6 +365,7 @@ Get all ayahs of one surah from a mushaf.
 | Field | Value |
 | --- | --- |
 | API route | `GET /mushafs/{mushaf_id}/{surah_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#ayahs) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -391,6 +400,7 @@ image packages, and riwaya.
 | Field | Value |
 | --- | --- |
 | API route | `GET /mushafs` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#mushafs) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -417,6 +427,7 @@ A scholarly note with its text, linked ayahs, writer, and category.
 | Field | Value |
 | --- | --- |
 | API route | `GET /note/{note_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#notes) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -448,6 +459,7 @@ List all reciters with recitations, audio servers, and available surahs.
 | Field | Value |
 | --- | --- |
 | API route | `GET /reciters` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#reciters) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -475,6 +487,7 @@ none exist.
 | Field | Value |
 | --- | --- |
 | API route | `GET /related-books/{book_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#books) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -506,6 +519,7 @@ List the books whose content covers a specific surah.
 | Field | Value |
 | --- | --- |
 | API route | `GET /surah/books/{surah_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#surah) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -537,6 +551,7 @@ List the fatwas related to a specific surah.
 | Field | Value |
 | --- | --- |
 | API route | `GET /surah/fatwas/{surah_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#surah) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -569,6 +584,7 @@ virtues, topics, purposes.
 | Field | Value |
 | --- | --- |
 | API route | `GET /surah/information/{surah_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#surah) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -609,6 +625,7 @@ List the tafsir books available for a specific surah.
 | Field | Value |
 | --- | --- |
 | API route | `GET /surah/tafsirs/{surah_id}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#surah) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -640,6 +657,7 @@ List all Quranic topics with their linked ayahs. Topics are hierarchical.
 | Field | Value |
 | --- | --- |
 | API route | `GET /topics` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#topics) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -667,6 +685,7 @@ grouped by all available languages.
 | Field | Value |
 | --- | --- |
 | API route | `GET /translations/{surah_id}/{ayah_number}/{language?}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#translations) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -711,6 +730,7 @@ List the languages that have translations available for a specific ayah.
 | Field | Value |
 | --- | --- |
 | API route | `GET /translations/available-languages/{surah_id}/{ayah_number}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#translations) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -744,6 +764,7 @@ List available translation books, optionally filtered by language code.
 | Field | Value |
 | --- | --- |
 | API route | `GET /translation-books/{language_code?}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#translations) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -776,6 +797,7 @@ omitted) from a specific translation book.
 | Field | Value |
 | --- | --- |
 | API route | `GET /translation/{book_id}/{surah_id}/{ayah_number?}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#translations) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input
@@ -815,6 +837,7 @@ topics, or filtered by type.
 | Field | Value |
 | --- | --- |
 | API route | `GET /search/{query}/{type?}` |
+| API docs | [Quranpedia API docs](https://api.quranpedia.net/docs#search) |
 | Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
 
 ### Input

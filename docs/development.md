@@ -34,6 +34,127 @@ yarn dev:http
 
 The HTTP dev server is also reachable for ad-hoc testing with `curl`.
 
+### Testing stdio interactively
+
+A stdio server expects JSON-RPC on stdin, so running it in a plain terminal just
+hangs. Drive it through an MCP client instead:
+
+```bash
+# MCP Inspector — interactive web UI to browse tools and call them
+yarn inspect
+```
+
+This builds `dist/` and launches the inspector against `node dist/server.js`.
+The equivalent long form is `yarn build && npx -y
+@modelcontextprotocol/inspector --transport stdio -- node dist/server.js`.
+
+> Inspector v1 (the current npm default tag) is deprecated. After upgrading to
+> Node ≥ 22.19, switch to v2, which auto-detects stdio and drops the transport
+> flag: `npx -y @modelcontextprotocol/inspector node dist/server.js`.
+
+Or point an MCP client (Claude Desktop, Cursor, ...) at your local build — use a
+path relative to your checkout, e.g. `node dist/server.js` with `cwd` set to the
+repo root, or an absolute path in place of `<project-root>`:
+
+```json
+{
+  "mcpServers": {
+    "quranpedia-mcp": {
+      "command": "node",
+      "args": ["<project-root>/dist/server.js"]
+    }
+  }
+}
+```
+
+## Configuring MCP servers for Claude
+
+Claude Code and Claude Desktop are separate products with separate configuration systems. An MCP server has to be registered in each one separately if you want it available in both.
+
+### Claude Code (CLI)
+
+**Recommended: use the CLI command**
+
+```bash
+claude mcp add <server-name> -- node /path/to/server.js
+```
+
+This handles the config file for you — no manual JSON editing needed.
+
+**Check what's registered:**
+
+```bash
+claude mcp list
+claude mcp get <server-name>
+```
+
+**Manual config (if you prefer editing files directly):**
+
+- **Project-level** (shared with anyone who clones the repo): `.mcp.json` at the **project root** — not inside a `.claude/` subfolder.
+- **User-level** (global, applies across all your projects): `~/.claude.json` — this sits *outside* the `.claude/` directory. Don't confuse it with `~/.claude/settings.json`, which controls permissions and behavior, not MCP servers.
+
+Example `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "<server-name>": {
+      "command": "node",
+      "args": ["/path/to/server.js"]
+    }
+  }
+}
+```
+
+### Claude Desktop (app)
+
+Config lives in `claude_desktop_config.json`. Location depends on OS:
+
+| OS | Path |
+|---|---|
+| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+
+Easiest way to find/create it: open Claude Desktop → **Settings → Developer → Edit Config**.
+
+Example config:
+
+```json
+{
+  "mcpServers": {
+    "<server-name>": {
+      "command": "node",
+      "args": ["/path/to/server.js"]
+    }
+  }
+}
+```
+
+After editing:
+
+1. Save the file
+2. **Fully quit** Claude Desktop (check it's not still running in the tray/menu bar)
+3. Reopen it
+4. Look for the hammer/tools icon in the chat input box to confirm the server loaded
+
+**Windows-specific caveat:** if you installed the MSIX-packaged build from claude.ai/download, there's a known bug where "Edit Config" opens `%APPDATA%\Claude\...` but the app actually reads a virtualized copy at:
+
+```
+%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\claude_desktop_config.json
+```
+
+If your edits don't seem to take effect, check that path directly.
+
+### Quick reference
+
+| | Claude Code | Claude Desktop |
+|---|---|---|
+| Project config | `.mcp.json` (project root) | — |
+| User/global config | `~/.claude.json` | OS-specific path above |
+| CLI helper | `claude mcp add / list / get` | — |
+| Restart needed? | No (re-run `claude mcp list` to confirm) | Yes, full quit + reopen |
+
 ## Test
 
 ```bash
@@ -77,7 +198,7 @@ yarn build
 yarn check:submission
 ```
 
-This lints the deployed server: fetches `https://mcp.quran.us.kg/health`,
+This lints the deployed server: fetches `https://mcp.quranpedia.net/health`,
 calls `tools/list`, and verifies every tool satisfies the submission
 requirements (description length, forbidden words, annotations).
 
@@ -154,7 +275,7 @@ tool is a typed wrapper over a Quranpedia API route. To add a new tool:
 
 ## Deploy
 
-The public endpoint at `https://mcp.quran.us.kg/` is rebuilt and restarted
+The public endpoint at `https://mcp.quranpedia.net/` is rebuilt and restarted
 from the repo via the standard `docker compose` flow:
 
 ```bash
@@ -164,17 +285,32 @@ docker compose up -d --build
 Verify the new version is live:
 
 ```bash
-curl -sS https://mcp.quran.us.kg/health
+curl -sS https://mcp.quranpedia.net/health
 # → {"status":"ok","version":"2.0.0","sessions":0,"quranpediaCache":{"memoryEntries":0,"diskEntries":0,"hits":0,"misses":0}}
 ```
 
 ## Release
 
+Publish the package to npm:
+
 ```bash
-yarn build
-yarn version patch   # or minor / major
-yarn publish --access public
+npm login                              # once per machine (verify: npm whoami)
+yarn version patch                     # or minor / major
+npm publish --dry-run                  # sanity-check the tarball contents
+yarn publish --access public           # or: npm publish --access public
 ```
+
+`prepublishOnly: yarn build` runs automatically before publishing, so the
+tarball always contains a fresh build — no manual `yarn build` needed.
+
+Notes:
+
+- `dist/server.js` is the executable (`bin`); `main` points at `dist/server.js`,
+  so consumers get a working module entry even without the bin.
+- `files` in `package.json` ships only `dist/` and `CHANGELOG.md` — anything else
+  you want in the tarball must be listed there.
+- After publishing, verify with `npm view quranpedia-mcp version` and
+  `npx -y quranpedia-mcp`.
 
 ## Repository layout
 
@@ -229,6 +365,6 @@ quranpedia-mcp/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── server.json                  # MCP registry manifest (npm stdio + remote HTTP)
-├── mcp.json                     # client config pointing at mcp.quran.us.kg
+├── mcp.json                     # client config pointing at mcp.quranpedia.net
 └── smithery.yaml                # Smithery stdio manifest
 ```

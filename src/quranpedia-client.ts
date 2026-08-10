@@ -51,11 +51,13 @@ export const QP_FETCH_TIMEOUT_MS = positiveInt(process.env.QP_FETCH_TIMEOUT_MS, 
 export const QP_CACHE_TTL_MS = positiveInt(process.env.QP_CACHE_TTL_MS, 30 * 24 * 60 * 60 * 1000);
 export const QP_CACHE_DIR = process.env.QP_CACHE_DIR || undefined;
 export const QP_CACHE_MAX_ENTRIES = positiveInt(process.env.QP_CACHE_MAX_ENTRIES, 5000);
+export const QP_CACHE_MAX_DISK_ENTRIES = positiveInt(process.env.QP_CACHE_MAX_DISK_ENTRIES, 5000);
 
 const cache = new QuranpediaCache({
   ttlMs: QP_CACHE_TTL_MS,
   directory: QP_CACHE_DIR,
   maxEntries: QP_CACHE_MAX_ENTRIES,
+  maxDiskEntries: QP_CACHE_MAX_DISK_ENTRIES,
 });
 
 export function quranpediaCacheStats(): ReturnType<QuranpediaCache['stats']> {

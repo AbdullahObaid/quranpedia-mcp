@@ -415,7 +415,7 @@ git commit -m "feat(tools): add library and index route tools"
 
 - `version`: `"1.0.0"` → `"2.0.0"`.
 - `description`: →
-  `Explore the Quran through 23 MCP tools backed by the Quranpedia API — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quran.us.kg.`
+  `Explore the Quran through 23 MCP tools backed by the Quranpedia API — mushafs, ayahs, surahs, tafsir, translations, books, fatwas, notes, topics, reciters, and categories. Hosted at mcp.quranpedia.net.`
 - `keywords`: `["mcp","mcp-server","quran","tafsir","translation","mushaf","ayah","surah","quranpedia","arabic","claude","ai"]`
 - `dependencies`: remove the `"quran-search-engine": "^0.3.2",` line. Keep `@modelcontextprotocol/sdk` and `zod`.
 

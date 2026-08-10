@@ -77,7 +77,7 @@ Every request flows through `src/quranpedia-cache.ts` (`getOrSet`):
 | Layer | When used | Notes |
 | --- | --- | --- |
 | In-memory `Map` | always | Shared across HTTP sessions; capped at `QP_CACHE_MAX_ENTRIES` (oldest evicted first). |
-| On-disk (`QP_CACHE_DIR`) | when set | SHA-1-keyed JSON files that survive restarts, so a long-running server keeps serving cached ayahs even if the upstream is down. Point it at a mounted volume (e.g. rclone/FUSE Garage S3) for durable caching. |
+| On-disk (`QP_CACHE_DIR`) | when set | SHA-1-keyed JSON files that survive restarts, so a long-running server keeps serving cached ayahs even if the upstream is down. Point it at a mounted volume (e.g. rclone/FUSE Garage S3) for durable caching. Bounded: expired entries are pruned and, when the file count exceeds `QP_CACHE_MAX_DISK_ENTRIES`, the oldest files are evicted (throttled to once per minute). |
 
 Concurrent callers with the same key share one in-flight fetch (a `pending`
 map), so popular ayahs never hammer the upstream in parallel.
@@ -92,6 +92,7 @@ map), so popular ayahs never hammer the upstream in parallel.
 | `QP_CACHE_TTL_MS` | `2592000000` (30 d) | Cache entry lifetime; Quranic text is static. |
 | `QP_CACHE_DIR` | _(unset)_ | Optional persistent cache directory. |
 | `QP_CACHE_MAX_ENTRIES` | `5000` | In-memory cache cap. |
+| `QP_CACHE_MAX_DISK_ENTRIES` | `5000` | On-disk cache cap (expired + oldest entries pruned on writes). |
 
 `/health` reports `quranpediaCache: { memoryEntries, diskEntries, hits, misses }`
 alongside the existing `status` / `version` / `sessions` fields.
@@ -153,9 +154,9 @@ and reads the same env file (typically `.env`).
 
 ## Cloudflare proxy
 
-The publicly hosted endpoint at `https://mcp.quran.us.kg/` is fronted by
+The publicly hosted endpoint at `https://mcp.quranpedia.net/` is fronted by
 Cloudflare. The container runs behind Cloudflare's edge; the
-`Host`-header allow-list in `MCP_ALLOWED_HOSTS` is set to `mcp.quran.us.kg`
+`Host`-header allow-list in `MCP_ALLOWED_HOSTS` is set to `mcp.quranpedia.net`
 in the `.env` so requests from any other hostname are rejected at the
 application layer. The `Dockerfile` healthcheck still works because it
 connects to `127.0.0.1:${PORT}` directly.

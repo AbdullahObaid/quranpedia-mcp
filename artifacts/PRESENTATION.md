@@ -59,13 +59,13 @@ offline Quran dataset; every tool now talks to `api.quranpedia.net`:
   equivalent and are gone.
 - **5 renamed** to mirror their API routes:
 
-| Old name                   | New name                  |
-| -------------------------- | ------------------------- |
-| `get_ayah_content_options` | `get_ayah_options`        |
-| `get_tafsir`               | `get_ayah_book_content`   |
+| Old name                   | New name                      |
+| -------------------------- | ----------------------------- |
+| `get_ayah_content_options` | `get_ayah_options`            |
+| `get_tafsir`               | `get_ayah_book_content`       |
 | `get_translation`          | `get_translation` (unchanged) |
-| `get_surah_background`     | `get_surah_information`   |
-| `search_quranpedia`        | `search`                  |
+| `get_surah_background`     | `get_surah_information`       |
+| `search_quranpedia`        | `search`                      |
 
 - **18 added** — mushaf, surah, translation, library, and index tools (§4).
 
@@ -100,31 +100,31 @@ Both transports share the same `createServer()` path → identical tool surface.
 Every tool is a thin typed wrapper over `https://api.quranpedia.net/v1`, named
 after the route it calls, and annotated `openWorldHint: true`.
 
-| #  | Tool                             | API route                                                  |
-| -- | -------------------------------- | ---------------------------------------------------------- |
-| 1  | `get_ayah_book_content`          | `GET /ayah/{surah_id}/{ayah_number}/book/{book_id}`        |
-| 2  | `get_ayah_options`               | `GET /ayah/{surah_id}/{ayah_number}/options`               |
-| 3  | `get_book`                       | `GET /book/{book_id}`                                      |
-| 4  | `get_categories`                 | `GET /categories/{type?}`                                  |
-| 5  | `get_category_items`             | `GET /category/{category_id}/{type}`                       |
-| 6  | `get_fatwa`                      | `GET /fatwa/{fatwa_id}`                                    |
-| 7  | `get_mushaf`                     | `GET /mushafs/{id}`                                        |
-| 8  | `get_mushaf_ayah`                | `GET /mushafs/{mushaf_id}/{surah_id}/{ayah_number}`        |
-| 9  | `get_mushaf_surah`               | `GET /mushafs/{mushaf_id}/{surah_id}`                      |
-| 10 | `get_mushafs`                    | `GET /mushafs`                                             |
-| 11 | `get_note`                       | `GET /note/{note_id}`                                      |
-| 12 | `get_reciters`                   | `GET /reciters`                                            |
-| 13 | `get_related_books`              | `GET /related-books/{book_id}`                             |
-| 14 | `get_surah_books`                | `GET /surah/books/{surah_id}`                              |
-| 15 | `get_surah_fatwas`               | `GET /surah/fatwas/{surah_id}`                             |
-| 16 | `get_surah_information`          | `GET /surah/information/{surah_id}`                        |
-| 17 | `get_surah_tafsirs`              | `GET /surah/tafsirs/{surah_id}`                            |
-| 18 | `get_topics`                     | `GET /topics`                                              |
-| 19 | `get_translation`                | `GET /translations/{surah_id}/{ayah_number}/{language?}`   |
-| 20 | `get_translation_available_languages` | `GET /translations/available-languages/{surah_id}/{ayah_number}` |
-| 21 | `get_translation_books`          | `GET /translation-books/{language_code?}`                  |
-| 22 | `get_translation_by_book`        | `GET /translation/{book_id}/{surah_id}/{ayah_number?}`     |
-| 23 | `search`                         | `GET /search/{query}/{type?}`                              |
+| #   | Tool                                  | API route                                                        |
+| --- | ------------------------------------- | ---------------------------------------------------------------- |
+| 1   | `get_ayah_book_content`               | `GET /ayah/{surah_id}/{ayah_number}/book/{book_id}`              |
+| 2   | `get_ayah_options`                    | `GET /ayah/{surah_id}/{ayah_number}/options`                     |
+| 3   | `get_book`                            | `GET /book/{book_id}`                                            |
+| 4   | `get_categories`                      | `GET /categories/{type?}`                                        |
+| 5   | `get_category_items`                  | `GET /category/{category_id}/{type}`                             |
+| 6   | `get_fatwa`                           | `GET /fatwa/{fatwa_id}`                                          |
+| 7   | `get_mushaf`                          | `GET /mushafs/{id}`                                              |
+| 8   | `get_mushaf_ayah`                     | `GET /mushafs/{mushaf_id}/{surah_id}/{ayah_number}`              |
+| 9   | `get_mushaf_surah`                    | `GET /mushafs/{mushaf_id}/{surah_id}`                            |
+| 10  | `get_mushafs`                         | `GET /mushafs`                                                   |
+| 11  | `get_note`                            | `GET /note/{note_id}`                                            |
+| 12  | `get_reciters`                        | `GET /reciters`                                                  |
+| 13  | `get_related_books`                   | `GET /related-books/{book_id}`                                   |
+| 14  | `get_surah_books`                     | `GET /surah/books/{surah_id}`                                    |
+| 15  | `get_surah_fatwas`                    | `GET /surah/fatwas/{surah_id}`                                   |
+| 16  | `get_surah_information`               | `GET /surah/information/{surah_id}`                              |
+| 17  | `get_surah_tafsirs`                   | `GET /surah/tafsirs/{surah_id}`                                  |
+| 18  | `get_topics`                          | `GET /topics`                                                    |
+| 19  | `get_translation`                     | `GET /translations/{surah_id}/{ayah_number}/{language?}`         |
+| 20  | `get_translation_available_languages` | `GET /translations/available-languages/{surah_id}/{ayah_number}` |
+| 21  | `get_translation_books`               | `GET /translation-books/{language_code?}`                        |
+| 22  | `get_translation_by_book`             | `GET /translation/{book_id}/{surah_id}/{ayah_number?}`           |
+| 23  | `search`                              | `GET /search/{query}/{type?}`                                    |
 
 Conventions: success = `{content:[{type:"text",text:JSON}]}`; errors = `isError:true`;
 genuinely missing resources return `null` (not an error). Every Quranpedia response
@@ -186,22 +186,23 @@ Also: `bin: quranpedia-mcp → dist/server.js` (npm package is runnable via `npx
 All **14 vars documented in `.env.example` are used in code — unchanged in v2.0.0
 (no new vars added, none removed)**. Table of what reads what:
 
-| Variable                    | Default                 | Read by              | Purpose                 |
-| --------------------------- | ----------------------- | -------------------- | ----------------------- |
-| `TRANSPORT`                 | `stdio`                 | src/server.ts        | stdio vs http           |
-| `PORT`                      | `4000`                  | src/server.ts        | HTTP listen port        |
-| `HOST`                      | `0.0.0.0`               | src/server.ts        | HTTP bind host          |
-| `MCP_ALLOWED_HOSTS`         | unset (allow all)       | src/server.ts        | Host-header allow-list  |
-| `MCP_SESSION_TTL_MS`        | `300000`                | src/server.ts        | Idle session TTL        |
-| `MCP_MAX_SESSIONS`          | `500`                   | src/server.ts        | Session cap (503)       |
-| `MCP_MAX_BODY_BYTES`        | `1048576`               | src/server.ts        | 1 MiB body cap          |
-| `MCP_RATE_LIMIT_PER_MINUTE` | `60`                    | src/server.ts        | Per-IP token bucket     |
-| `QP_BASE_URL`               | `api.quranpedia.net/v1` | quranpedia-client.ts | Upstream base URL       |
-| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1`                     | quranpedia-client.ts | Default tafsir book     |
-| `QP_FETCH_TIMEOUT_MS`       | `30000`                 | quranpedia-client.ts | Upstream timeout        |
-| `QP_CACHE_TTL_MS`           | `2592000000` (30 d)     | quranpedia-client.ts | Cache lifetime          |
-| `QP_CACHE_DIR`              | unset (memory only)     | quranpedia-client.ts | Optional disk cache dir |
-| `QP_CACHE_MAX_ENTRIES`      | `5000`                  | quranpedia-client.ts | In-memory cap           |
+| Variable                    | Default                 | Read by              | Purpose                               |
+| --------------------------- | ----------------------- | -------------------- | ------------------------------------- |
+| `TRANSPORT`                 | `stdio`                 | src/server.ts        | stdio vs http                         |
+| `PORT`                      | `4000`                  | src/server.ts        | HTTP listen port                      |
+| `HOST`                      | `0.0.0.0`               | src/server.ts        | HTTP bind host                        |
+| `MCP_ALLOWED_HOSTS`         | unset (allow all)       | src/server.ts        | Host-header allow-list                |
+| `MCP_SESSION_TTL_MS`        | `300000`                | src/server.ts        | Idle session TTL                      |
+| `MCP_MAX_SESSIONS`          | `500`                   | src/server.ts        | Session cap (503)                     |
+| `MCP_MAX_BODY_BYTES`        | `1048576`               | src/server.ts        | 1 MiB body cap                        |
+| `MCP_RATE_LIMIT_PER_MINUTE` | `60`                    | src/server.ts        | Per-IP token bucket                   |
+| `QP_BASE_URL`               | `api.quranpedia.net/v1` | quranpedia-client.ts | Upstream base URL                     |
+| `QP_DEFAULT_TAFSIR_BOOK_ID` | `1`                     | quranpedia-client.ts | Default tafsir book                   |
+| `QP_FETCH_TIMEOUT_MS`       | `30000`                 | quranpedia-client.ts | Upstream timeout                      |
+| `QP_CACHE_TTL_MS`           | `2592000000` (30 d)     | quranpedia-client.ts | Cache lifetime                        |
+| `QP_CACHE_DIR`              | unset (memory only)     | quranpedia-client.ts | Optional disk cache dir               |
+| `QP_CACHE_MAX_ENTRIES`      | `5000`                  | quranpedia-client.ts | In-memory cap                         |
+| `QP_CACHE_MAX_DISK_ENTRIES` | `5000`                  | quranpedia-client.ts | On-disk cap (prunes expired + oldest) |
 
 ### Findings (dead / stale values)
 
@@ -342,7 +343,7 @@ configSchema:
 
 ## 12. License
 
-- **MIT License**, `LICENSE` file, **Copyright (c) 2026 adelpro**.
+- **MIT License**, `LICENSE` file, **Copyright (c) 2026 Quranpedia**.
 - Mirrored in `package.json` → `"license": "MIT"` and the README license badge.
 - Permissive: anyone may use/copy/modify/publish/distribute/sublicense/sell, with the
   copyright + permission notice kept; software provided "AS IS", no warranty,
@@ -352,7 +353,7 @@ configSchema:
 
 ## Appendix — interesting facts & quick references
 
-- Public endpoint: **https://mcp.quran.us.kg/** (Cloudflare-fronted, no auth, open CORS).
+- Public endpoint: **https://mcp.quranpedia.net/** (Cloudflare-fronted, no auth, open CORS).
   Health: `/health` → `{status, version, sessions, quranpediaCache}`.
 - `server.json` is the **MCP registry manifest** (npm stdio package + remote HTTP);
   `mcp.json` is the ready-made **client config** pointing at the public URL.
