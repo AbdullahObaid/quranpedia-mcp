@@ -28,6 +28,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   return them side by side, which is how tafsir is actually read. Books that
   cannot be read are reported in `unavailable` rather than failing the call, so
   one bad id does not cost the rest of the comparison.
+## [2.2.0]
+
+### Added
+
+- `get_changes` — read Quranpedia's delta-sync feed (`/v1/changes?since=`) so a
+  cached copy can be refreshed instead of going quietly stale. Each row carries
+  a `refetch` path for the resource that changed.
+- `quranpediaRequestFresh()` in `src/quranpedia-client.ts` — a cache-bypassing
+  fetch for endpoints whose value is freshness. `get_changes` uses it; serving
+  that endpoint from the 30-day cache would defeat its purpose.
+## [2.1.0]
+
+### Added
+
+- `get_ayah_content` — fetch one of the twelve per-ayah Quranpedia services
+  (`asbab`, `e3rab`, `fatwa`, `meanings`, `mutshabeh`, `nasekh`, `notes`,
+  `qiraat`, `similar`, `tafsir`, `topics`, `translations`) for one ayah.
+  `get_ayah_options` already told the model these existed, but only `tafsir`
+  (via `get_ayah_book_content`) and `translations` could actually be read.
+- `AYAH_SERVICES` / `AyahService` and `fetchAyahService()` in
+  `src/quranpedia-client.ts`.
 
 ## [2.0.0] - 2026-08-09
 

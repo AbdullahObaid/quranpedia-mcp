@@ -14,10 +14,12 @@ const transport = new StdioClientTransport({
 const REQUIRED_TOOLS = [
   'compare_ayah_books',
   'get_ayah_book_content',
+  'get_ayah_content',
   'get_ayah_options',
   'get_book',
   'get_categories',
   'get_category_items',
+  'get_changes',
   'get_fatwa',
   'get_mushaf',
   'get_mushaf_ayah',
@@ -318,6 +320,44 @@ try {
   // Negative: fewer than two books is not a comparison
   const tooFew = await callTool('compare_ayah_books', { surah: 2, ayah: 255, book_ids: [3] });
   assert(tooFew.isError === true, 'compare_ayah_books with one book should return isError');
+  // get_changes — the delta-sync feed, deliberately uncached
+  const changes = await callTool('get_changes', { since: '2026-08-09' });
+  const changesPayload = parsePayload(changes);
+  assert(typeof changesPayload.since === 'string', 'get_changes should echo the since date');
+  assert(typeof changesPayload.until === 'string', 'get_changes should report an until stamp');
+  assert(
+    changesPayload.changes && typeof changesPayload.changes === 'object',
+    'get_changes should return a changes object keyed by resource type',
+  );
+  assert(
+    typeof changesPayload.source?.url === 'string',
+    'get_changes should carry a quranpedia source block',
+  );
+
+  // Negative: a malformed date fails schema validation before any request
+  const badSince = await callTool('get_changes', { since: 'last tuesday' });
+  assert(badSince.isError === true, "get_changes('last tuesday') should return isError");
+  // get_ayah_content — a real service returns its payload plus attribution
+  const ayahContent = await callTool('get_ayah_content', { surah: 2, ayah: 255, service: 'topics' });
+  const ayahContentPayload = parsePayload(ayahContent);
+  assert(ayahContentPayload.ayah === '2:255', 'get_ayah_content should echo the ayah reference');
+  assert(ayahContentPayload.service === 'topics', 'get_ayah_content should echo the service');
+  assert(
+    Array.isArray(ayahContentPayload.content),
+    "get_ayah_content(2:255,'topics') should return an array",
+  );
+  assert(
+    typeof ayahContentPayload.source?.url === 'string',
+    'get_ayah_content should carry a quranpedia source block',
+  );
+
+  // get_ayah_content — a service with nothing for the ayah is still a success
+  const emptyContent = await callTool('get_ayah_content', { surah: 2, ayah: 255, service: 'asbab' });
+  assert(emptyContent.isError !== true, 'get_ayah_content with no content should not be an error');
+
+  // Negative: get_ayah_content with an unknown service → tool error
+  const badService = await callTool('get_ayah_content', { surah: 2, ayah: 255, service: 'bogus' });
+  assert(badService.isError === true, "get_ayah_content('bogus' service) should return isError");
 
   console.log('stdio transport test passed');
   process.exit(0);

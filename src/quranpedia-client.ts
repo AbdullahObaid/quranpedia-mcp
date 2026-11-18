@@ -96,6 +96,19 @@ export function quranpediaRequest<T>(cacheKey: string, path: string): Promise<Qu
     .then((data): QuranpediaResult<T> => ({ url, data }));
 }
 
+/**
+ * Cache-bypassing fetch, for the endpoints whose whole value is freshness.
+ *
+ * `quranpediaRequest` is right for content — a tafsir does not change between
+ * two calls a minute apart. `/changes` is the opposite: it answers "what moved
+ * since this date", so serving it from a 30-day cache would return a confidently
+ * stale answer to the one question asked to detect staleness.
+ */
+export function quranpediaRequestFresh<T>(path: string): Promise<QuranpediaResult<T>> {
+  const url = `${QURANPEDIA_BASE_URL}${path}`;
+  return quranpediaGet<T>(url).then((data): QuranpediaResult<T> => ({ url, data }));
+}
+
 // --- Typed response shapes (from the Quranpedia API docs + live responses) ---
 
 export interface AyahOptions {
@@ -214,6 +227,20 @@ export type SearchResult = SearchAllResult | SearchTypeResult;
 
 export type QuranpediaSearchType = 'books' | 'fatwas' | 'notes' | 'topics';
 
+/** One resource type's slice of a `/changes` response. */
+export interface ChangeSet {
+  count: number;
+  truncated: boolean;
+  rows: Array<Record<string, unknown>>;
+}
+
+export interface ChangesResponse {
+  since: string;
+  until: string;
+  note?: string;
+  changes: Record<string, ChangeSet>;
+}
+
 // --- Endpoint helpers ---
 
 export function fetchAyahOptions(
@@ -231,6 +258,48 @@ export function fetchAyahBook(
   return quranpediaRequest(
     `book:${surah}:${ayah}:${bookId}`,
     `/ayah/${surah}/${ayah}/book/${bookId}`,
+  );
+}
+
+/**
+ * Per-ayah services published by `/v1/ayah/{surah}/{ayah}/{service}`.
+ *
+ * These are the keys the API itself lists in the `available` array of its 400
+ * response, so the tool's enum stays in step with the upstream service map.
+ */
+export const AYAH_SERVICES = [
+  'asbab',
+  'e3rab',
+  'fatwa',
+  'meanings',
+  'mutshabeh',
+  'nasekh',
+  'notes',
+  'qiraat',
+  'similar',
+  'tafsir',
+  'topics',
+  'translations',
+] as const;
+
+export type AyahService = (typeof AYAH_SERVICES)[number];
+
+/**
+ * Fetch one service for one ayah.
+ *
+ * The payload shape varies by service — the book-backed ones return a flat
+ * array of books, `meanings` returns `{ book_info, words }` entries, `qiraat`
+ * groups by word — so this stays `unknown` and the caller passes it through
+ * rather than flattening a shape it does not own.
+ */
+export function fetchAyahService(
+  surah: number,
+  ayah: number,
+  service: AyahService,
+): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(
+    `service:${surah}:${ayah}:${service}`,
+    `/ayah/${surah}/${ayah}/${service}`,
   );
 }
 
@@ -340,6 +409,15 @@ export function fetchCategories(type?: QuranpediaSearchType): Promise<Quranpedia
   const suffix = type ? `/${type}` : '';
   return quranpediaRequest(`categories:${type ?? 'all'}`, `/categories${suffix}`);
 }
+
+/**
+ * What changed since `since` (YYYY-MM-DD). Deliberately uncached: a cached
+ * answer here is a wrong answer.
+ */
+export function fetchChanges(since: string): Promise<QuranpediaResult<ChangesResponse>> {
+  return quranpediaRequestFresh(`/changes?since=${encodeURIComponent(since)}`);
+}
+
 export function fetchCategoryItems(
   categoryId: number,
   type: QuranpediaSearchType,
