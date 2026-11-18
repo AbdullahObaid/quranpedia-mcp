@@ -38,6 +38,7 @@ function waitForPort() {
 
 const REQUIRED_TOOLS = [
   'get_ayah_book_content',
+  'get_ayah_content',
   'get_ayah_options',
   'get_book',
   'get_categories',
@@ -346,6 +347,28 @@ async function main() {
   }
 
   const sessionId = transport.sessionId;
+  // get_ayah_content — a real service returns its payload plus attribution
+  const ayahContent = await callTool(client, 'get_ayah_content', { surah: 2, ayah: 255, service: 'topics' });
+  const ayahContentPayload = parsePayload(ayahContent);
+  assert(ayahContentPayload.ayah === '2:255', 'get_ayah_content should echo the ayah reference');
+  assert(ayahContentPayload.service === 'topics', 'get_ayah_content should echo the service');
+  assert(
+    Array.isArray(ayahContentPayload.content),
+    "get_ayah_content(2:255,'topics') should return an array",
+  );
+  assert(
+    typeof ayahContentPayload.source?.url === 'string',
+    'get_ayah_content should carry a quranpedia source block',
+  );
+
+  // get_ayah_content — a service with nothing for the ayah is still a success
+  const emptyContent = await callTool(client, 'get_ayah_content', { surah: 2, ayah: 255, service: 'asbab' });
+  assert(emptyContent.isError !== true, 'get_ayah_content with no content should not be an error');
+
+  // Negative: get_ayah_content with an unknown service → tool error
+  const badService = await callTool(client, 'get_ayah_content', { surah: 2, ayah: 255, service: 'bogus' });
+  assert(badService.isError === true, "get_ayah_content('bogus' service) should return isError");
+
   await client.close();
 
   if (sessionId) {
@@ -364,6 +387,7 @@ async function main() {
   if (healthAfterClose.sessions !== 0) {
     throw new Error(`Expected 0 sessions after close, got ${healthAfterClose.sessions}`);
   }
+
 
   console.log('HTTP transport test passed');
 }

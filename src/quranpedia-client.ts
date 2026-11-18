@@ -234,6 +234,48 @@ export function fetchAyahBook(
   );
 }
 
+/**
+ * Per-ayah services published by `/v1/ayah/{surah}/{ayah}/{service}`.
+ *
+ * These are the keys the API itself lists in the `available` array of its 400
+ * response, so the tool's enum stays in step with the upstream service map.
+ */
+export const AYAH_SERVICES = [
+  'asbab',
+  'e3rab',
+  'fatwa',
+  'meanings',
+  'mutshabeh',
+  'nasekh',
+  'notes',
+  'qiraat',
+  'similar',
+  'tafsir',
+  'topics',
+  'translations',
+] as const;
+
+export type AyahService = (typeof AYAH_SERVICES)[number];
+
+/**
+ * Fetch one service for one ayah.
+ *
+ * The payload shape varies by service — the book-backed ones return a flat
+ * array of books, `meanings` returns `{ book_info, words }` entries, `qiraat`
+ * groups by word — so this stays `unknown` and the caller passes it through
+ * rather than flattening a shape it does not own.
+ */
+export function fetchAyahService(
+  surah: number,
+  ayah: number,
+  service: AyahService,
+): Promise<QuranpediaResult<unknown>> {
+  return quranpediaRequest(
+    `service:${surah}:${ayah}:${service}`,
+    `/ayah/${surah}/${ayah}/${service}`,
+  );
+}
+
 export function fetchSurahTafsirs(surah: number): Promise<QuranpediaResult<SurahTafsirBook[]>> {
   return quranpediaRequest(`surah-tafsirs:${surah}`, `/surah/tafsirs/${surah}`);
 }

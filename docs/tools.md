@@ -106,6 +106,74 @@ surah's tafsir book list:
 
 ---
 
+## `get_ayah_content`
+
+Title: **Get Ayah Content**
+
+Fetch one service's content for one ayah. Pairs with `get_ayah_options`: that
+tool lists which services exist for the ayah, this one reads one of them.
+
+| Field | Value |
+| --- | --- |
+| Description | "Fetch one service's content for one ayah: asbab, e3rab, fatwa, meanings, mutshabeh, nasekh, notes, qiraat, similar, tafsir, topics or translations. Call get_ayah_options first to see which of them exist for that ayah." (215 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{
+  "surah":   "integer 1-114",
+  "ayah":    "integer 1-286",
+  "service": "asbab | e3rab | fatwa | meanings | mutshabeh | nasekh | notes | qiraat | similar | tafsir | topics | translations"
+}
+```
+
+### Output
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/ayah/2/255/topics" },
+  "ayah": "2:255",
+  "service": "topics",
+  "content": [
+    {
+      "id": 1395,
+      "name": "\u0623\u064f\u0639\u0637\u064a \u0627\u0644\u0634\u0641\u0627\u0639\u0629",
+      "related_ayahs": "2:255,10:3,20:108,21:23",
+      "parent": { "id": 165, "name": "..." }
+    }
+  ]
+}
+```
+
+`content` is passed through as the API returns it, because the shape varies by
+service: the book-backed services (`tafsir`, `e3rab`, `asbab`, `mutshabeh`,
+`nasekh`, `translations`) return a flat array of books, `meanings` returns
+`{ book_info, words }` entries, `qiraat` groups by word, and `topics`, `notes`,
+`fatwa` and `similar` each return their own record shape.
+
+An ayah with nothing for that service returns an empty array — a successful
+answer, not an error. A non-existent ayah returns `content: null` with a
+`reason`. An unrecognised `service` fails schema validation and returns
+`isError: true`.
+
+### How it relates to `get_ayah_book_content`
+
+`get_ayah_content(service: "tafsir")` lists the tafsir **books** available for
+the ayah; `get_ayah_book_content` reads the **text** from one of them. Discover
+with the first, read with the second.
+
+### Try it
+
+```bash
+curl -X POST https://mcp.quranpedia.net/ \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_ayah_content","arguments":{"surah":2,"ayah":255,"service":"topics"}}}'
+```
+
+---
+
 ## `get_ayah_options`
 
 Title: **Get Ayah Options**
