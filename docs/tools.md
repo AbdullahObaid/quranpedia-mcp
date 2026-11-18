@@ -323,6 +323,64 @@ Get books, fatwas, or notes within a specific category.
 
 ---
 
+## `get_changes`
+
+Title: **Get Changes**
+
+List what Quranpedia corrected since a date, so a cached copy can be refreshed.
+
+| Field | Value |
+| --- | --- |
+| Description | "List what Quranpedia corrected since a date, so a cached copy can be refreshed. Each row carries a refetch path for the resource that changed. Dates further back than a year are refused — the dumps are the way to take a fresh full copy." (238 chars) |
+| Annotations | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+
+### Input
+
+```json
+{ "since": "YYYY-MM-DD" }
+```
+
+### Output
+
+```json
+{
+  "source": { "provider": "quranpedia", "url": "https://api.quranpedia.net/v1/changes?since=2026-08-09" },
+  "since": "2026-08-09",
+  "until": "2026-08-10T19:51:53+00:00",
+  "note": "Each list is capped at 1000 rows ...",
+  "changes": {
+    "ayahs":              { "count": 0, "truncated": false, "rows": [] },
+    "ayah_book_contents": { "count": 0, "truncated": false, "rows": [] },
+    "books":              { "count": 0, "truncated": false, "rows": [] },
+    "fatwas":             { "count": 0, "truncated": false, "rows": [] },
+    "notes":              { "count": 0, "truncated": false, "rows": [] },
+    "topics":             { "count": 0, "truncated": false, "rows": [] }
+  }
+}
+```
+
+Each row carries a `refetch` path — e.g. `/v1/ayah/2/255/book/2003` — so a stale
+entry can be re-read without working out which tool to call.
+
+`truncated: true` means the list hit its 1,000-row cap and is incomplete;
+re-query with a later `since`.
+
+### This tool bypasses the cache
+
+Every other Quranpedia tool is served through the 30-day TTL cache, which is
+right for content: a tafsir does not change between two calls a minute apart.
+`get_changes` is the exception, and goes through `quranpediaRequestFresh()`.
+Serving it from cache would return a stale answer to the one question asked in
+order to detect staleness.
+
+### Errors
+
+A malformed date fails schema validation and returns `isError: true` without a
+request. A date more than a year old is refused upstream, with a pointer to the
+dumps for taking a fresh full copy.
+
+---
+
 ## `get_fatwa`
 
 Title: **Get Fatwa**

@@ -96,6 +96,19 @@ export function quranpediaRequest<T>(cacheKey: string, path: string): Promise<Qu
     .then((data): QuranpediaResult<T> => ({ url, data }));
 }
 
+/**
+ * Cache-bypassing fetch, for the endpoints whose whole value is freshness.
+ *
+ * `quranpediaRequest` is right for content — a tafsir does not change between
+ * two calls a minute apart. `/changes` is the opposite: it answers "what moved
+ * since this date", so serving it from a 30-day cache would return a confidently
+ * stale answer to the one question asked to detect staleness.
+ */
+export function quranpediaRequestFresh<T>(path: string): Promise<QuranpediaResult<T>> {
+  const url = `${QURANPEDIA_BASE_URL}${path}`;
+  return quranpediaGet<T>(url).then((data): QuranpediaResult<T> => ({ url, data }));
+}
+
 // --- Typed response shapes (from the Quranpedia API docs + live responses) ---
 
 export interface AyahOptions {
@@ -213,6 +226,20 @@ export interface SearchTypeResult extends SearchPage {
 export type SearchResult = SearchAllResult | SearchTypeResult;
 
 export type QuranpediaSearchType = 'books' | 'fatwas' | 'notes' | 'topics';
+
+/** One resource type's slice of a `/changes` response. */
+export interface ChangeSet {
+  count: number;
+  truncated: boolean;
+  rows: Array<Record<string, unknown>>;
+}
+
+export interface ChangesResponse {
+  since: string;
+  until: string;
+  note?: string;
+  changes: Record<string, ChangeSet>;
+}
 
 // --- Endpoint helpers ---
 
@@ -382,6 +409,15 @@ export function fetchCategories(type?: QuranpediaSearchType): Promise<Quranpedia
   const suffix = type ? `/${type}` : '';
   return quranpediaRequest(`categories:${type ?? 'all'}`, `/categories${suffix}`);
 }
+
+/**
+ * What changed since `since` (YYYY-MM-DD). Deliberately uncached: a cached
+ * answer here is a wrong answer.
+ */
+export function fetchChanges(since: string): Promise<QuranpediaResult<ChangesResponse>> {
+  return quranpediaRequestFresh(`/changes?since=${encodeURIComponent(since)}`);
+}
+
 export function fetchCategoryItems(
   categoryId: number,
   type: QuranpediaSearchType,
