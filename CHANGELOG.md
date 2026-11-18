@@ -30,6 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `quranpediaRequestFresh()` in `src/quranpedia-client.ts` — a cache-bypassing
   fetch for endpoints whose value is freshness. `get_changes` uses it; serving
   that endpoint from the 30-day cache would defeat its purpose.
+## [2.1.0]
+
+### Added
+
+- `get_ayah_content` — fetch one of the twelve per-ayah Quranpedia services
+  (`asbab`, `e3rab`, `fatwa`, `meanings`, `mutshabeh`, `nasekh`, `notes`,
+  `qiraat`, `similar`, `tafsir`, `topics`, `translations`) for one ayah.
+  `get_ayah_options` already told the model these existed, but only `tafsir`
+  (via `get_ayah_book_content`) and `translations` could actually be read.
+- `AYAH_SERVICES` / `AyahService` and `fetchAyahService()` in
+  `src/quranpedia-client.ts`.
 
 ## [2.0.0] - 2026-08-09
 

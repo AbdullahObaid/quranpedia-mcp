@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerGetAyahBookContent } from './get-ayah-book-content.js';
+import { registerGetAyahContent } from './get-ayah-content.js';
 import { registerGetAyahOptions } from './get-ayah-options.js';
 import { registerGetBook } from './get-book.js';
 import { registerGetCategories } from './get-categories.js';
@@ -30,6 +31,7 @@ import { registerSearch } from './search.js';
  */
 export function registerTools(server: McpServer): void {
   registerGetAyahBookContent(server);
+  registerGetAyahContent(server);
   registerGetAyahOptions(server);
   registerGetBook(server);
   registerGetCategories(server);
